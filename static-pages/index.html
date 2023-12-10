@@ -1,0 +1,86 @@
+<html>
+
+<head>
+  <title>Voice In My Head</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'>
+  <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>
+  <meta name='apple-mobile-web-app-capable' content='yes'>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@1,500&display=swap" rel="stylesheet">
+  <script>
+    function init() {
+      fetch('/spin-up-bot' + window.location.search, {
+        method: 'POST',
+      })
+        .then((res) => {
+          if (!res.ok) {
+            res.text().then((text) => {
+              console.error(
+                'failed to spin up bot:',
+                res.status,
+                res.statusText,
+                text,
+              );
+              const errorMessage = document.getElementById('error-message');
+              errorMessage.innerText = text;
+            });
+            return null;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          const url = `run?room_url=${data.room_url}`;
+          console.log(`redirecting to ${url}`)
+          window.location.href = url;
+        })
+        .catch((e) => {
+          console.error('failed to spin up bot', e);
+          const errorMessage = document.getElementById('error-message');
+          errorMessage.innerText = e.message;
+        });
+    }
+
+    function jingle() {
+      const audio = new Audio('sound/jingle.wav');
+      audio.play();
+    }
+  </script>
+</head>
+
+<body class="bg-vimh"></body>
+<div class="flex justify-center items-center h-screen flex-col">
+  <h1 class="text-8xl text-center font-bold mb-4 text-white uppercase font-mono italic" onclick="jingle()">Voice In My
+    Head
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+      if (id) {
+        document.write("#" + id);
+        if (window.location.hostname.includes('dev')) {
+          document.write('-dev');
+        }
+      }
+    </script>
+  </h1>
+  <div class="flex">
+    <button id="new-session-button"
+      class="bg-blue-400 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded font-mono mr-2 italic"
+      onclick="init()">
+      New Session
+    </button>
+    <button id="reload-button"
+      class="bg-blue-400 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded font-mono mr-2 italic"
+      onclick="location.reload()">
+      Reload
+    </button>
+  </div>
+
+  <div id="error-message" class="text-red-500 mt-4"></div>
+
+</div>
+</body>
+
+</html>

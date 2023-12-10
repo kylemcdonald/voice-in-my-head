@@ -1,0 +1,1 @@
+curl -Lo scripts/script.csv "https://docs.google.com/spreadsheets/d/e/2PACX-1vQk_5aNeA1itcbfjazsahPrdsg1ljXw2c4mwEkePq7vcpicYIOmGD7KFN5JQuyNf_nKmG1Wk8Pp4mgQ/pub?gid=0&single=true&output=csv"

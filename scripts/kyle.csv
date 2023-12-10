@@ -1,0 +1,6 @@
+function,input,output
+set_voice,Kyle,
+play_sound,jingle,
+speak,"My name is Kyle McDonald.",
+experience_loop,"The voice in my head is kind and caring, and marvelously wise and insightful, making astute observations and giving creative and useful advice.",
+play_sound,jingle,

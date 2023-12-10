@@ -1,0 +1,174 @@
+<html>
+
+<head>
+  <title>Voice In My Head</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'>
+  <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>
+  <meta name='apple-mobile-web-app-capable' content='yes'>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@1,500&display=swap" rel="stylesheet">
+  <style>
+    #prebuilt {
+      display: none;
+    }
+  </style>
+  <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+  <script>
+    let started = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.location.hostname.includes('dev')) {
+        const debugButton = document.getElementById('debug-button');
+        debugButton.classList.remove('hidden');
+      }
+
+      const call = createCallObject();
+
+      const params = new URLSearchParams(window.location.search);
+      call.join({
+        url: params.get('room_url')
+      });
+    });
+
+    function createCallObject() {
+      const prebuilt = document.getElementById('prebuilt');
+      const call = window.DailyIframe.createFrame(prebuilt, {
+        // dailyConfig: {
+        //   v2CamAndMic: true
+        // }
+      });
+      window.call = call;
+
+      let meeting_joined = false;
+
+      function maybeReady() {
+        if (!meeting_joined) {
+          console.log("meeting not joined");
+          return;
+        }
+        if (Object.keys(window.call.participants()).length === 1) {
+          console.log("no other participants");
+          return;
+        }
+
+        navigator.mediaDevices.ondevicechange = function () {
+          navigator.mediaDevices.enumerateDevices()
+            .then((devices) => {
+              console.log("devices changed");
+              window.call.sendAppMessage({ "message": "devices changed", "deviceCount": devices.length})
+              // devices.forEach((device) => {
+              //   console.log(JSON.stringify(device));
+              //   window.call.sendAppMessage(JSON.parse(JSON.stringify(device)));
+              // });
+            })
+        };
+
+        // show controls
+        console.log("ready");
+        const button = document.getElementById('start-button');
+        button.classList.remove('bg-gray-500');
+        button.classList.add('bg-blue-500', 'hover:bg-blue-700');
+        button.innerText = 'Tap to Start';
+        button.disabled = false;
+      }
+
+      call
+        .on('joined-meeting', () => {
+          console.log('joined-meeting');
+          meeting_joined = true;
+          maybeReady();
+
+          // wait 10 seconds and give up if there's no bot
+          setTimeout(async () => {
+            const pax = call.participants();
+            console.log({ pax });
+            if (Object.keys(pax).length === 1) {
+              window.alert(
+                "Sorry! The Voice In My Head bot is unavailable at the moment.",
+              );
+              // go to the previous page
+              // window.history.back();
+            }
+          }, 10 * 1000);
+        })
+        .on('participant-joined', (e) => {
+          console.log(e);
+          maybeReady();
+        })
+        .on('participant-left', (e) => {
+          console.log(e);
+          if (e.participant.user_name === "voice") {
+            // window.history.back();
+          }
+        })
+        .on('app-message', (msg) => {
+          // console.log(msg);
+
+          if (msg.data.event === "chat-msg") {
+            addMessage(msg.data.user, msg.data.message);
+          }
+        });
+      return call;
+    }
+
+    function start() {
+      window.call.sendAppMessage({ "message": "start" });
+      const button = document.getElementById('start-button');
+      button.classList.add('hidden');
+      started = true;
+    }
+
+    function toggleDebug() {
+      const prebuilt = document.getElementById('prebuilt');
+      if (prebuilt.style.display === 'none') {
+        prebuilt.style.display = 'block';
+      } else {
+        prebuilt.style.display = 'none';
+      }
+    }
+
+    function addMessage(user, text) {
+      const transcript = document.getElementById('transcript');
+      const div = document.createElement('div');
+      div.classList.add('p-3', 'm-1', 'rounded-lg', 'text-white');
+      if (!started) {
+        div.classList.add('opacity-25');
+      }
+      if (user === 'user') {
+        div.classList.add('self-end', 'bg-blue-800', 'ml-10');
+      } else {
+        div.classList.add('self-start', 'bg-gray-800', 'mr-10');
+      }
+      div.innerText = text;
+      transcript.appendChild(div);
+    }
+  </script>
+</head>
+
+<body class="bg-black" style="overflow: hidden;">
+
+  <div id="transcript"
+    class="flex flex-col justify-end items-center fixed bottom-0 left-0 w-full h-full p-2 overflow-y-scroll">
+  </div>
+
+  <div id="prebuilt"></div>
+
+  <div id="controls" class="flex justify-between items-center fixed top-0 left-0 w-full p-3">
+    <button id="start-button"
+      class="bg-gray-500 text-white font-bold py-2 px-4 rounded font-mono italic rounded-xl text-5xl" disabled
+      onclick="start()">
+      Loading...
+    </button>
+    <button id="debug-button"
+      class="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl text-5xl font-mono italic"
+      onclick="toggleDebug()">
+      Toggle Debug
+    </button>
+  </div>
+
+</body>
+
+</html>

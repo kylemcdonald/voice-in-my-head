@@ -1,0 +1,6 @@
+function,input,output
+set_voice,Lauren,
+play_sound,jingle,
+speak,"My name is Lauren Lee McCarthy.",
+experience_loop,"The voice in my head is pithy, silly, and existential, asks a lot of questions, and is slightly antagonistic.",
+play_sound,jingle,

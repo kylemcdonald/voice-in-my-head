@@ -1,0 +1,17 @@
+# environment
+.*
+*.pyc
+*.csv
+*.txt
+*.pcm
+*.wav
+*.mp3
+*.asd
+node_modules
+
+logs
+transcripts
+cache
+
+!scripts
+!sound
