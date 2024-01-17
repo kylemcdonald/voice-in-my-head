@@ -101,7 +101,7 @@ Please summarize all my responses in three sentences, written from my perspectiv
         return self.chatgpt(
             f"""We just overheard this conversation between myself and others: "{overheard}"
 
-Respond to this in-character, in one sentence, as the Voice In My Head.""",
+Respond to this in-character, in ten words or less, as the Voice In My Head.""",
             system=f"You are a helpful Voice In My Head. {self.goals_prompt}. You always respond in the first person, as if you are me.",
             backup="Hmm, how interesting.",
         )
