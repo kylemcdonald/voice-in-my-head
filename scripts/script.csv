@@ -60,7 +60,7 @@ speak,I feel it's almost time to return back to the onboarding location. I've re
 wait,3,,
 play_sound,jingle,,
 wait,1,,
-set_voice,Bella,,
+set_voice,Mimi,,
 speak,"Hello {name}, it's now time to return to the inner voice you were born with. But... {memory}",,
 listen,,,
 speak,Thank you. I hope you have enjoyed this time with the voice in your head. Please return the phone and ear bud to one of the staff members. Goodbye.,,
