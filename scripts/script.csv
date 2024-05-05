@@ -1,6 +1,6 @@
 function,input,output,notes (just for our use)
 play_sound,jingle,,
-set_voice,Bella,,
+set_voice,Mimi,,
 speak,Hello there. Can you hear me?,,
 listen,,,
 speak,It's nice to be here with you. Can you tell me your name?,,

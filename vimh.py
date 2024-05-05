@@ -394,7 +394,7 @@ def main():
     parser.add_argument(
         "-s", "--script", required=False, help="Script file", default="script.csv"
     )
-    parser.add_argument("-v", "--voice", required=False, help="Voice", default="Bella")
+    parser.add_argument("-v", "--voice", required=False, help="Voice", default="Mimi")
     args, _ = parser.parse_known_args()
 
     log(args)

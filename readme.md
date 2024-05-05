@@ -1,8 +1,17 @@
 # Voice In My Head
 
+## eSIM setup
+
+1. Remove any previous eSIM.
+2. Sign up for a new eSIM using [Airalo](https://airalo.com/) or [Nomad](https://www.getnomad.app/).
+3. Install the eSIM, and turn on Data Roaming.
+4. Check the [latency to cloud servers](https://cloudpingtest.com/digital_ocean).
+
 ## Setup
 
 Create a cloud server. If installing on Digital Ocean, make sure to enable [the agent with advanced metrics](https://docs.digitalocean.com/products/monitoring/how-to/install-agent/).
+
+For 4 users, 8 CPUs and 16 GB RAM is recommended. After creating the machine, add the IP address to the appropriate DNS record.
 
 Prep the packages:
 
@@ -14,21 +23,21 @@ sudo apt install -y libmp3lame-dev # needed for elevenlabs
 sudo apt install -y ffmpeg # for processing elevenlabs input
 ```
 
+Install Anaconda:
+
+```sh
+wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
+bash Anaconda3-2024.02-1-Linux-x86_64.sh -b
+$HOME/anaconda3/bin/conda init
+source ~/.bashrc
+rm Anaconda3-2024.02-1-Linux-x86_64.sh
+```
+
 Clone the repo:
 
 ```sh
 git clone https://github.com/kylemcdonald/voice-in-my-head.git
 cd voice-in-my-head
-```
-
-Install Anaconda:
-
-```sh
-wget https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-x86_64.sh
-bash Anaconda3-2023.09-0-Linux-x86_64.sh -b
-$HOME/anaconda3/bin/conda init
-source ~/.bashrc
-rm Anaconda3-2023.09-0-Linux-x86_64.sh
 ```
 
 Create the environment:
@@ -103,6 +112,7 @@ bash install-service.sh
 * Safari > Microphone > Allow
 * Lock to portrait mode
 * After connecting the AirPods, turn Automatic Ear Detection: Off
+* Disable [NameDrop](https://support.apple.com/guide/personal-safety/secure-airdrop-and-namedrop-ips7d84d2cdc/)
 
 ### Setting up Guided Access
 
