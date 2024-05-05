@@ -10,3 +10,4 @@ gunicorn==21.2.0
 Flask-AutoIndex==0.6.6
 onnxruntime==1.16.1
 librosa==0.10.1
+ffmpeg-python==0.2.0

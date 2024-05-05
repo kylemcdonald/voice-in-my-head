@@ -2,6 +2,7 @@ import datetime
 import subprocess
 import os
 from helpers import log
+from remove_silence import remove_silence
 
 
 def pcm_to_mp3(mp3_filename, pcm, samplerate):
@@ -29,25 +30,9 @@ def pcm_to_mp3(mp3_filename, pcm, samplerate):
     )
     p.communicate(pcm)
     log(f"saved {wav_filename}")
+    
     # second pass normalizes the audio and removes silences
-    p = subprocess.Popen(
-        [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "panic",
-            "-i",
-            wav_filename,
-            "-af",
-            "loudnorm,silenceremove=stop_periods=-1:stop_duration=1:start_threshold=-30dB:stop_threshold=-30dB",
-            "-ab",
-            "192k",
-            "-t",
-            "00:07:00", # only use first 7 minutes to stay within elevenlabs limit
-            mp3_filename,
-        ]
-    )
-    p.communicate(pcm)
+    remove_silence(wav_filename, mp3_filename)
     log(f"saved {mp3_filename}")
 
 
