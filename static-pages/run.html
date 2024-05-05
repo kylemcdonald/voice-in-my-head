@@ -54,17 +54,26 @@
           return;
         }
 
-        navigator.mediaDevices.ondevicechange = function () {
-          navigator.mediaDevices.enumerateDevices()
-            .then((devices) => {
-              console.log("devices changed");
-              window.call.sendAppMessage({ "message": "devices changed", "deviceCount": devices.length})
-              // devices.forEach((device) => {
-              //   console.log(JSON.stringify(device));
-              //   window.call.sendAppMessage(JSON.parse(JSON.stringify(device)));
-              // });
-            })
-        };
+        call.enumerateDevices()
+          .then((devices) => {
+            console.log("devices changed");
+            console.log(devices.devices);
+            devices.devices.forEach((device) => {
+              if (device.kind === "audioinput") {
+                if (!device.label.includes("iPhone")) {
+                  console.log("using audio device", device.label);
+                  window.call.sendAppMessage({ "message": "using audio device", "deviceLabel": device.label});
+                  call.setInputDevicesAsync({
+                    videoDeviceId: null,
+                    audioDeviceId: device.deviceId,
+                  });
+                } else {
+                  console.log("skipping audio device", device.label);
+                  window.call.sendAppMessage({ "message": "skipping audio device", "deviceLabel": device.label});
+                }
+              }
+            });
+          })
 
         // show controls
         console.log("ready");
