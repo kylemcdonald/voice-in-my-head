@@ -76,12 +76,14 @@
           })
 
         // show controls
-        console.log("ready");
-        const button = document.getElementById('start-button');
-        button.classList.remove('bg-gray-500');
-        button.classList.add('bg-blue-500', 'hover:bg-blue-700');
-        button.innerText = 'Tap to Start';
-        button.disabled = false;
+        setTimeout(() => {
+          console.log("ready");
+          const button = document.getElementById('start-button');
+          button.classList.remove('bg-gray-500');
+          button.classList.add('bg-blue-500', 'hover:bg-blue-700');
+          button.innerText = 'Tap to Start';
+          button.disabled = false;
+        }, 1000); // short delay to account for the server still starting up
       }
 
       call
