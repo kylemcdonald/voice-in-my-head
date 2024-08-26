@@ -216,8 +216,6 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         if voice in self.name_to_voice:
             voice_id = self.name_to_voice[voice]
             print("voice in self.name_to_voice, voice_id: ", voice_id)
-        else:
-            print("voice not in self.name_to_voice:", self.name_to_voice)
 
         hash = hashlib.sha256((voice + text).encode("utf-8")).hexdigest()
         output_filename = f"cache/{voice}/{hash}.mp3"
