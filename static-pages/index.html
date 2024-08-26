@@ -52,11 +52,13 @@
 
 <body class="bg-vimh"></body>
 <div class="flex justify-center items-center h-screen flex-col">
-  <h1 class="text-8xl text-center font-bold mb-4 text-white uppercase font-mono italic" onclick="jingle()">Voice In My
+  <h1 class="text-6xl text-center font-bold mb-4 text-white uppercase font-mono italic" onclick="jingle()">Voice In My
     Head
     <script>
       const urlParams = new URLSearchParams(window.location.search);
       const id = urlParams.get('id');
+      const server = window.location.hostname.split(".")[0].split("-")[1];
+      document.write(server);
       if (id) {
         document.write("#" + id);
         if (window.location.hostname.includes('dev')) {
