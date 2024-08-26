@@ -27,7 +27,8 @@ class VAD:
             self.VADIterator,
             self.collect_chunks,
         ) = self.utils
-        self.vad_iterator = self.VADIterator(self.model)
+        self.target_sr = 16000
+        self.vad_iterator = self.VADIterator(self.model, sampling_rate=self.target_sr)
         self.output_queue = queue.Queue()
         self.reset()
 
@@ -40,9 +41,9 @@ class VAD:
 
     def update(self, y_buffer):
         y = np.frombuffer(y_buffer, dtype=np.int16).astype(np.float32) / 32768
-        y_resampled = librosa.resample(y, orig_sr=self.orig_sr, target_sr=16000)
+        y_resampled = librosa.resample(y, orig_sr=self.orig_sr, target_sr=self.target_sr)
         self.running = np.hstack((self.running, y_resampled))
-        window_size = 1536
+        window_size = 512
         while len(self.running) > window_size:
             chunk = self.running[:window_size]
             speech_dict = self.vad_iterator(chunk, return_seconds=True)

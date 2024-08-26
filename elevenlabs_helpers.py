@@ -3,7 +3,8 @@ import subprocess
 import os
 from helpers import log
 from remove_silence import remove_silence
-
+from elevenlabs.core.api_error import ApiError
+from elevenlabs import VoiceSettings
 
 def pcm_to_mp3(mp3_filename, pcm, samplerate):
     os.makedirs(os.path.dirname(mp3_filename), exist_ok=True)
@@ -36,20 +37,20 @@ def pcm_to_mp3(mp3_filename, pcm, samplerate):
     log(f"saved {mp3_filename}")
 
 
-def clone_voice(elevenlabs, pcm, samplerate):
+def clone_voice(client, pcm, samplerate):
     log(f"cloning voice from {len(pcm)} bytes...")
     dt = datetime.datetime.now().isoformat()
     filename = f"references/{dt.replace(':','-')}.mp3"
     pcm_to_mp3(filename, pcm, samplerate)
     log(f"uploading mp3 to elevenlabs...")
-    voice = elevenlabs.clone(
+    voice = client.clone(
         name=dt,
         files=[
             filename,
         ],
     )
     log(f"cloned {filename} into name={voice.name} id={voice.voice_id}")
-    voice_settings = elevenlabs.VoiceSettings(
+    voice_settings = VoiceSettings(
         stability=0.4, similarity_boost=1.0, style=0.4, use_speaker_boost=True
     )
     voice.edit(voice_settings=voice_settings)
@@ -57,8 +58,8 @@ def clone_voice(elevenlabs, pcm, samplerate):
     return voice
 
 
-def remove_old_voices(elevenlabs, max_voice_count=15):
-    voices = elevenlabs.voices()
+def remove_old_voices(client, max_voice_count=15):
+    voices = client.voices.get_all(show_legacy=True).voices
     cloned = [e for e in voices if e.category == "cloned"]
     vimh_voices = []
     for voice in cloned:
@@ -76,9 +77,10 @@ def remove_old_voices(elevenlabs, max_voice_count=15):
         try:
             voice.delete()
             log(f"deleted {voice.name}")
-        except elevenlabs.api.error.APIError:
+        except ApiError:
             log(f"already deleted {voice.name}")
             pass
         deleted_voices.append(voice.name)
     leftover_voices = [e for e in voices if e.name not in deleted_voices]
+    print("voice:", leftover_voices)
     return leftover_voices

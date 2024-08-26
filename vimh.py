@@ -28,14 +28,14 @@ import wave
 import json
 from streamp3 import MP3Decoder
 import os
-import elevenlabs
+from elevenlabs.client import ElevenLabs
 from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
 
 
-elevenlabs.set_api_key(os.environ["ELEVENLABS_API_KEY"])
+elevenlabs_client = ElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
 
 
 sample_rate = 44100
@@ -91,9 +91,11 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
             {"base": {"camera": "unsubscribed", "microphone": "subscribed"}}
         )
 
-        self.voice_list = remove_old_voices(elevenlabs)
+        self.voice_list = remove_old_voices(elevenlabs_client)
         self.name_to_voice = {e.name: e.voice_id for e in self.voice_list}
+        print("name_to_voice", self.name_to_voice)
         self.default_voice = default_voice
+        print("default_voice", self.default_voice)
 
         log("done with init")
 
@@ -211,9 +213,13 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         )
 
         voice = self.default_voice
+        print("voice", voice)
         voice_id = voice
         if voice in self.name_to_voice:
             voice_id = self.name_to_voice[voice]
+            print("voice in self.name_to_voice, voice_id: ", voice_id)
+        else:
+            print("voice not in self.name_to_voice:", self.name_to_voice)
 
         hash = hashlib.sha256((voice + text).encode("utf-8")).hexdigest()
         output_filename = f"cache/{voice}/{hash}.mp3"
@@ -223,8 +229,11 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         if use_cache and os.path.exists(output_filename):
             generator = read_file_to_generator(output_filename, byte_count)
         else:
-            generator = elevenlabs.generate(
-                text, stream=True, latency=(0 if accurate else 3), voice=voice_id, model="eleven_multilingual_v2"
+            generator = elevenlabs_client.text_to_speech.convert_as_stream(
+                text=text,
+                optimize_streaming_latency=(0 if accurate else 3),
+                voice_id=voice_id,
+                model_id="eleven_turbo_v2_5"
             )
         if use_cache and not os.path.exists(output_filename):
             generator = write_file_from_generator(output_filename, generator)
@@ -303,7 +312,7 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
 
     def clone_voice(self):
         # remove old voices, clone current voice, save cloned voice id for later
-        voice = clone_voice(elevenlabs, self.audio_recorder.recording, sample_rate)
+        voice = clone_voice(elevenlabs_client, self.audio_recorder.recording, sample_rate)
         self.cloned_voice_id = voice.voice_id
         log({"voice_name": voice.name, "voice_id": voice.voice_id})
 
