@@ -73,9 +73,12 @@ def update_script():
     return script, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
-@app.route("/location")
-def location():
-    return os.getenv("LOCATION")
+@app.route("/info")
+def info():
+    commit = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE
+    ).stdout.decode("utf-8")
+    return commit + " " + os.getenv("LOCATION")
 
 
 def convert_dict_to_args(d):
