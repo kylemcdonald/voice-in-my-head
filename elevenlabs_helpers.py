@@ -48,6 +48,7 @@ def clone_voice(client, pcm, samplerate):
         files=[
             filename,
         ],
+        description="vimh"
     )
     log(f"cloned {filename} into name={voice.name} id={voice.voice_id}")
     voice_settings = VoiceSettings(
