@@ -15,7 +15,7 @@ def build_dialog(messages, mapping={"user": "Patient", "assistant": "Therapist"}
 
 
 class ChatGPT:
-    def __init__(self, model="gpt-4-1106-preview"):
+    def __init__(self, model="gpt-4o"):
         self.openai = openai.OpenAI()
         self.model = model
 
