@@ -93,9 +93,7 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
 
         self.voice_list = remove_old_voices(elevenlabs_client)
         self.name_to_voice = {e.name: e.voice_id for e in self.voice_list}
-        print("name_to_voice", self.name_to_voice)
         self.default_voice = default_voice
-        print("default_voice", self.default_voice)
 
         log("done with init")
 

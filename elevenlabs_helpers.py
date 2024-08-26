@@ -54,7 +54,10 @@ def clone_voice(client, pcm, samplerate):
     voice_settings = VoiceSettings(
         stability=0.4, similarity_boost=1.0, style=0.4, use_speaker_boost=True
     )
-    voice.edit(voice_settings=voice_settings)
+    client.voices.edit_settings(
+        voice_id=voice.voice_id,
+        request=voice_settings
+    )
     log(f"set voice settings for clone name={voice.name} id={voice.voice_id} settings={voice_settings}")
     return voice
 
@@ -76,12 +79,11 @@ def remove_old_voices(client, max_voice_count=15):
     deleted_voices = []
     for dt, voice in vimh_voices[:-max_voice_count]:
         try:
-            voice.delete()
+            client.voices.delete(voice.voice_id)
             log(f"deleted {voice.name}")
         except ApiError:
             log(f"already deleted {voice.name}")
             pass
         deleted_voices.append(voice.name)
     leftover_voices = [e for e in voices if e.name not in deleted_voices]
-    print("voice:", leftover_voices)
     return leftover_voices
