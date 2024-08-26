@@ -80,6 +80,16 @@
 
   <div id="error-message" class="text-red-500 mt-4"></div>
 
+  <div id="error-message" class="text-gray-500 mt-4">
+    <script>
+      fetch('/location')
+        .then((res) => res.text())
+        .then((location) => {
+          document.write(location);
+        });
+    </script>
+  </div>
+
 </div>
 </body>
 

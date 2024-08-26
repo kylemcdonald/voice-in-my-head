@@ -73,6 +73,11 @@ def update_script():
     return script, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
+@app.route("/location")
+def location():
+    return os.getenv("LOCATION")
+
+
 def convert_dict_to_args(d):
     args = []
     for k, v in d.items():

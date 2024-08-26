@@ -26,11 +26,11 @@ sudo apt install -y ffmpeg # for processing elevenlabs input
 Install Anaconda:
 
 ```sh
-wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
-bash Anaconda3-2024.02-1-Linux-x86_64.sh -b
+wget https://repo.anaconda.com/archive/Anaconda3-2024.06-1-Linux-x86_64.sh
+bash Anaconda3-2024.06-1-Linux-x86_64.sh -b
 $HOME/anaconda3/bin/conda init
 source ~/.bashrc
-rm Anaconda3-2024.02-1-Linux-x86_64.sh
+rm Anaconda3-2024.06-1-Linux-x86_64.sh
 ```
 
 Clone the repo:
@@ -53,6 +53,7 @@ pip install -r requirements.txt
 Setup nginx:
 
 ```sh
+# first, edit .nginx to represent the desired subdomain
 sudo apt install -y nginx
 sudo ufw allow 'Nginx Full'
 sudo cp .nginx /etc/nginx/sites-available/vimh.iyoiyo.studio
