@@ -3,10 +3,13 @@ from helpers import ThreadedJob, log
 
 
 # combine consecutive "speak" rows into a single row
-def preprocess_script(reader):
+def preprocess_script(reader, language):
     rows = []
     prev_row = None
     for row in reader:
+        # copy the input from the specified language if it's not empty
+        if language != "en" and row[language] != "":
+            row["input"] = row[language]
         if row["function"] == "speak":
             if prev_row is None:
                 prev_row = row
@@ -21,10 +24,10 @@ def preprocess_script(reader):
 
 
 class ScriptReader:
-    def __init__(self, script_fn):
+    def __init__(self, script_fn, language):
         with open(script_fn) as csvfile:
             self.reader = csv.DictReader(csvfile)
-            self.rows = preprocess_script(self.reader)
+            self.rows = preprocess_script(self.reader, language)
             self.index = 0
             self.memory = {}
 

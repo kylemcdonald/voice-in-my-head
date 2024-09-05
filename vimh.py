@@ -46,8 +46,8 @@ turn_time = int(os.getenv("TURN_TIME_SECONDS"))
 
 
 class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
-    def __init__(self, script_fn, default_voice):
-        ScriptReader.__init__(self, script_fn)
+    def __init__(self, script_fn, default_voice, language):
+        ScriptReader.__init__(self, script_fn, language)
         ChatGPT.__init__(self)
 
         # conditions for starting the main loop
@@ -399,6 +399,7 @@ def main():
     parser.add_argument(
         "-s", "--script", required=False, help="Script file", default="script.csv"
     )
+    parser.add_argument("-l", "--language", required=False, help="Language code", default="en")
     parser.add_argument("-v", "--voice", required=False, help="Voice", default="Mimi")
     args, _ = parser.parse_known_args()
 
@@ -406,7 +407,7 @@ def main():
 
     Daily.init()
 
-    app = VoiceInMyHead(f"scripts/" + args.script, args.voice)
+    app = VoiceInMyHead(f"scripts/" + args.script, args.voice, args.language)
     try:
         app.run(args.meeting)
     except KeyboardInterrupt:
