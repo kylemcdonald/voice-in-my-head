@@ -1,9 +1,9 @@
 import openai
 import json
 import random
+import csv
 from time import time
 from helpers import log
-
 
 def build_dialog(messages, mapping={"user": "Patient", "assistant": "Therapist"}):
     dialog = []
@@ -13,11 +13,19 @@ def build_dialog(messages, mapping={"user": "Patient", "assistant": "Therapist"}
         dialog.append(f"{role}: {content}")
     return "\n".join(dialog)
 
-
 class ChatGPT:
-    def __init__(self, model="gpt-4o"):
+    def __init__(self, model="gpt-4o", language="en"):
         self.openai = openai.OpenAI()
         self.model = model
+        self.language = language
+        self.load_localized_strings()
+
+    def load_localized_strings(self):
+        self.strings = {}
+        with open('scripts/chatgpt.csv', 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                self.strings[row['Key']] = row[self.language]
 
     def chatgpt(self, prompt, system=None, backup=None):
         messages = []
@@ -42,77 +50,55 @@ class ChatGPT:
 
     def convert_response_to_name(self, response):
         if response == "":
-            return "friend"
+            return self.strings['convert_response_to_name_backup']
         return self.chatgpt(
-            f'I asked someone for their name, and they said "{response}". What should I call them? If it seems like they didn\t give a name, just say "friend".',
-            system="You are a helpful assistant that always responds by giving a single name, with no additional commentary or punctuation.",
-            backup="friend",
+            self.strings['convert_response_to_name_prompt'].format(response=response),
+            system=self.strings['convert_response_to_name_system'],
+            backup=self.strings['convert_response_to_name_backup'],
         )
 
     def convert_existing_to_summary(self, messages):
         dialog = build_dialog(messages)
         return self.chatgpt(
-            f"""Here is a previous discussion between us about how my internal monologue works:
-
-{dialog}
-
-Please summarize my responses in a way that helps me reflect on my answers, beginning with "It sounds like the voice in your head is...".""",
-            system="You are my helpful personal AI, I talk with you in order to understand myself better.",
-            backup="It sounds like the voice in your head is beautiful but complicated.",
+            self.strings['convert_existing_to_summary_prompt'].format(dialog=dialog),
+            system=self.strings['convert_existing_to_summary_system'],
+            backup=self.strings['convert_existing_to_summary_backup'],
         )
 
     def convert_goals_to_summary(self, messages):
         dialog = build_dialog(messages)
         return self.chatgpt(
-            f"""Here is a previous discussion between us about how I wish my internal monologue worked:
-
-{dialog}
-
-Please summarize my responses into a single paragraph, in a way that helps me reflect on my answers, beginning with "It sounds like you want the voice in your head to be...".""",
-            system="You are my helpful personal AI, I talk with you in order to understand myself better.",
-            backup="Hmm, it sounds like you want the voice in your head to be strong, and kind.",
+            self.strings['convert_goals_to_summary_prompt'].format(dialog=dialog),
+            system=self.strings['convert_goals_to_summary_system'],
+            backup=self.strings['convert_goals_to_summary_backup'],
         )
 
     def convert_goals_to_summary_prompt(self, messages):
         dialog = build_dialog(messages)
         return self.chatgpt(
-            f"""Here is a previous discussion between us about how I wish my internal monologue worked:
-
-{dialog}
-
-Please summarize all my responses in three sentences, written from my perspective, as an affirmation, beginning with "The Voice In My Head is...".""",
-            system="You are my helpful personal AI, I talk with you in order to understand myself better.",
-            backup="The voice in my head is strong and kind.",
+            self.strings['convert_goals_to_summary_prompt_prompt'].format(dialog=dialog),
+            system=self.strings['convert_goals_to_summary_prompt_system'],
+            backup=self.strings['convert_goals_to_summary_prompt_backup'],
         )
 
     def respond_to_overheard(self, overheard):
         if not overheard or overheard == "":
-            kind = random.choice(
-                ["life", "conversational", "emotional", "inter-personal"]
-            )
-            verb = random.choice(
-                ["think", "feel", "will", "want to", "need to", "hope that", "wish"]
-            )
+            kind = random.choice(self.strings["respond_to_overheard_kinds"].split(","))
+            verb = random.choice(self.strings["respond_to_overheard_verbs"].split(","))
             return self.chatgpt(
-                f'Share some broadly useful {kind} advice, in one sentence, as the Voice In My Head. Start with a phrase like "I {verb}".',
-                system=f"You are a helpful Voice In My Head. {self.goals_prompt}. You always respond in the first person, as if you are me.",
-                backup="Hmm, how interesting.",
+                self.strings['respond_to_overheard_empty_prompt'].format(kind=kind, verb=verb),
+                system=self.strings['respond_to_overheard_system'].format(goals_prompt=self.goals_prompt),
+                backup=self.strings['respond_to_overheard_backup'],
             )
         return self.chatgpt(
-            f"""We just overheard this conversation between myself and others: "{overheard}"
-
-Respond to this in-character, in ten words or less, as the Voice In My Head.""",
-            system=f"You are a helpful Voice In My Head. {self.goals_prompt}. You always respond in the first person, as if you are me.",
-            backup="Hmm, how interesting.",
+            self.strings['respond_to_overheard_prompt'].format(overheard=overheard),
+            system=self.strings['respond_to_overheard_system'].format(goals_prompt=self.goals_prompt),
+            backup=self.strings['respond_to_overheard_backup'],
         )
 
-    def convert_experience_to_memory(self, entire_trancript):
+    def convert_experience_to_memory(self, entire_transcript):
         return self.chatgpt(
-            f"""Here is a long transcript of things we overheard ourselves and others saying over the last half hour: "{entire_trancript}".
-
-As the Voice In My Head, please identify one particular phrase that stood out to you. Explain why you found the phrase interesting, and then ask me to repeat after you, and then say the phrase.
-
-For example, if you identify the phrase \"Anything can happen next\", then you might say something like: \"In reflecting on what just transpired, there is one phrase that stuck. I hope you will hold it as a memory of this time together. I heard something that made me reflect on the complexity of life, and the strangeness of our present moment. I would like to share this phrase with you. Are you ready? Repeat after me: 'Anything can happen next.'\"""",
-            system=f"You are a helpful Voice In My Head. {self.goals_prompt}. You always respond in the first person, as if you are me.",
-            backup="I feel lucky to have spent the day with you. Please remember one moment that you are grateful for, and take it with you.",
+            self.strings['convert_experience_to_memory_prompt'].format(entire_transcript=entire_transcript),
+            system=self.strings['convert_experience_to_memory_system'].format(goals_prompt=self.goals_prompt),
+            backup=self.strings['convert_experience_to_memory_backup'],
         )

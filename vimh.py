@@ -48,7 +48,9 @@ turn_time = int(os.getenv("TURN_TIME_SECONDS"))
 class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
     def __init__(self, script_fn, default_voice, language):
         ScriptReader.__init__(self, script_fn, language)
-        ChatGPT.__init__(self)
+        ChatGPT.__init__(self, language=language)
+        
+        self.language_code = language
 
         # conditions for starting the main loop
         self.inputs_updated = False
@@ -229,7 +231,8 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
                 text=text,
                 optimize_streaming_latency=(0 if accurate else 3),
                 voice_id=voice_id,
-                model_id="eleven_turbo_v2_5"
+                model_id="eleven_turbo_v2_5",
+                language_code=self.language_code
             )
         if use_cache and not os.path.exists(output_filename):
             generator = write_file_from_generator(output_filename, generator)
@@ -274,7 +277,7 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         self.srt_writer = SrtWriter(extract_room_name(meeting_url))        
         self.client.start_transcription(
             {
-                "language": "en",
+                "language": self.language_code,
                 "model": "2-general",
                 "tier": "nova",
                 "profanity_filter": False,

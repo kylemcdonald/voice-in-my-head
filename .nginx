@@ -1,6 +1,6 @@
 server {
         listen 80;
-        server_name vimh.iyoiyo.studio;
+        server_name vimh-ams.iyoiyo.studio;
 
         location / {
                 proxy_set_header   X-Forwarded-For $remote_addr;

@@ -11,8 +11,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@1,500&display=swap" rel="stylesheet">
   <script>
-    function init() {
-      fetch('/spin-up-bot' + window.location.search, {
+    function init(language) {
+      let params = new URLSearchParams(window.location.search);
+      params.set("language", language);
+      fetch('/spin-up-bot?' + params.toString(), {
         method: 'POST',
       })
         .then((res) => {
@@ -58,8 +60,13 @@
   <div class="flex">
     <button id="new-session-button"
       class="bg-blue-400 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded font-mono mr-2 italic"
-      onclick="init()">
-      New Session
+      onclick="init('en')">
+      en
+    </button>
+    <button id="new-session-button"
+      class="bg-blue-400 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded font-mono mr-2 italic"
+      onclick="init('nl')">
+      nl
     </button>
     <button id="reload-button"
       class="bg-blue-400 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded font-mono mr-2 italic"
