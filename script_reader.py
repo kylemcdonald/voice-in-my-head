@@ -9,6 +9,7 @@ def preprocess_script(reader, language):
     for row in reader:
         # copy the input from the specified language if it's not empty
         if language != "en" and row[language] != "":
+            print("swapping", row["input"], "for", row[language])
             row["input"] = row[language]
         if row["function"] == "speak":
             if prev_row is None:
@@ -61,6 +62,7 @@ class ScriptReader:
                     if f"{{{key}}}" not in input:
                         continue
                     input = input.replace(f"{{{key}}}", self.get_memory(key))
+                    print("replaced", key, "with", self.get_memory(key))
 
             func = getattr(self, function)
             if input:
