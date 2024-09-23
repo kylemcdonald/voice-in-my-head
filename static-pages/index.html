@@ -82,6 +82,9 @@
         const id = urlParams.get('id');
         if (id) {
           debugMessage += " #" + id;
+          if (id.includes('L')) {
+            document.body.style.backgroundColor = 'rgb(255, 211, 100)';
+          }
         }
         document.getElementById("debug-message").innerText = debugMessage;
       });
