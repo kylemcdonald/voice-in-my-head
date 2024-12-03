@@ -68,7 +68,7 @@ def run():
 @app.route("/update-script")
 def update_script():
     subprocess.run(["bash", "update-script.sh"])
-    with open("script.csv", "r") as f:
+    with open("scripts/script.csv", "r") as f:
         script = f.read()
     return script, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
