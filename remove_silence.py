@@ -64,35 +64,23 @@ def write_elevenlabs_mp3(fn, audio, sr):
     p.communicate(audio.tobytes())
 
 
-def auread(filename, sr=44100, normalize=True, in_type=np.int16):
-    in_type = np.dtype(in_type).type
-    channels = 1
-    format_string = "s16le"
-    command = [
-        "ffmpeg",
-        "-i",
-        filename,
-        "-f",
-        format_string,
-        "-acodec",
-        "pcm_" + format_string,
-        "-ar",
-        str(sr),
-        "-ac",
-        str(channels),
-        "-",
-    ]
-    p = sp.Popen(command, stdout=sp.PIPE, stderr=DEVNULL)
-    raw, err = p.communicate()
-    audio = np.frombuffer(raw, dtype=in_type)
-
-    return audio, sr
+def auread(filename, sr=44100, normalize=True):
+    print("about to read", filename)
+    y, file_sr = librosa.load(filename, sr=sr, mono=True)
+    print("read file", filename, "with sr", file_sr)
+    print("type", y.dtype)
+    if normalize:
+        y /= np.abs(y).max()
+    return y, sr
 
 
 # single function that takes input_fn and output_fn, and loads and chunks and saves to mp3
 def remove_silence(input_fn, output_fn):
+    print("reading", input_fn)
     y, sr = auread(input_fn)
+    print("chunking")
     chunks = np.hstack([y[a:b] for a, b in get_chunks(y, sr)])
+    print("writing", output_fn)
     write_elevenlabs_mp3(output_fn, chunks, sr)
 
 if __name__ == "__main__":
