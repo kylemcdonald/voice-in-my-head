@@ -4,6 +4,6 @@
     "buildcss": "npx tailwindcss -i ./tailwind/input.css -o ./static-pages/style.css --watch"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.10"
+    "tailwindcss": "^3.4.15"
   }
 }
