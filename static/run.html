@@ -36,9 +36,16 @@
     function createCallObject() {
       const prebuilt = document.getElementById('prebuilt');
       const call = window.DailyIframe.createFrame(prebuilt, {
-        // dailyConfig: {
-        //   v2CamAndMic: true
-        // }
+        dailyConfig: {
+          inputSettings: {
+            audio: {
+              settings: {
+                echoCancellation: true,
+                noiseSuppression: true
+              }
+            }
+          }
+        }
       });
       window.call = call;
 
@@ -54,36 +61,49 @@
           return;
         }
 
-        call.enumerateDevices()
+        // Show controls first since audio might fail
+        const button = document.getElementById('start-button');
+        button.classList.remove('bg-gray-500');
+        button.classList.add('bg-blue-500', 'hover:bg-blue-700');
+        button.innerText = 'Tap to Start';
+        button.disabled = false;
+
+        // Request audio permissions explicitly before enumerating devices
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(() => {
+            return call.enumerateDevices();
+          })
           .then((devices) => {
             console.log("devices changed");
             console.log(devices.devices);
-            devices.devices.forEach((device) => {
-              if (device.kind === "audioinput") {
-                if (!device.label.includes("iPhone")) {
-                  console.log("using audio device", device.label);
-                  window.call.sendAppMessage({ "message": "using audio device", "deviceLabel": device.label});
-                  call.setInputDevicesAsync({
-                    videoDeviceId: null,
-                    audioDeviceId: device.deviceId,
-                  });
-                } else {
-                  console.log("skipping audio device", device.label);
-                  window.call.sendAppMessage({ "message": "skipping audio device", "deviceLabel": device.label});
-                }
+            
+            // Check if we're on an iPhone
+            const isIPhone = /iPhone/i.test(navigator.userAgent);
+            console.log("Device detection - User Agent:", navigator.userAgent);
+            console.log("Device detection - Is iPhone:", isIPhone);
+            
+            if (isIPhone) {
+              console.log("Device detection - On iPhone, will check available audio devices");
+              const audioDevices = devices.devices.filter(d => d.kind === "audioinput" && !d.label.includes("iPhone"));
+              console.log("Device detection - Found", audioDevices.length, "non-iPhone audio devices");
+              if (audioDevices.length > 0) {
+                const device = audioDevices[0];
+                console.log("using audio device", device.label);
+                window.call.sendAppMessage({ "message": "using audio device", "deviceLabel": device.label});
+                call.setInputDevicesAsync({
+                  audioDeviceId: device.deviceId,
+                }).catch(err => {
+                  console.warn("Failed to set audio device, falling back to default:", err);
+                });
               }
-            });
+            } else {
+              console.log("Not on iPhone - using default audio device");
+              window.call.sendAppMessage({ "message": "using default audio device" });
+            }
           })
-
-        // show controls
-        setTimeout(() => {
-          console.log("ready");
-          const button = document.getElementById('start-button');
-          button.classList.remove('bg-gray-500');
-          button.classList.add('bg-blue-500', 'hover:bg-blue-700');
-          button.innerText = 'Tap to Start';
-          button.disabled = false;
-        }, 1000); // short delay to account for the server still starting up
+          .catch(error => {
+            console.warn("Error accessing microphone - will try to continue:", error);
+          });
       }
 
       call
