@@ -47,7 +47,7 @@ def index():
 
 @app.route("/sound/<path:filename>")
 def send_sound(filename):
-    return send_from_directory(os.path.join(app.static_folder, "sound"), filename)
+    return send_from_directory(os.path.join("sound"), filename)
 
 
 @app.route("/style.css")
