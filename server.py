@@ -138,5 +138,4 @@ def spin_up_bot():
 
     return jsonify({"room_url": room_url}), 200
 
-
-AutoIndex(app, browse_root=os.path.curdir)
+AutoIndex(app, browse_root=os.path.curdir, exclude_patterns=[r'.*', '*.env', '*.pyc', '__pycache__'])
