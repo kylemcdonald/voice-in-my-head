@@ -79,7 +79,7 @@ npx tailwindcss init
 npm run buildcss
 ```
 
-Fill out the .env file with the appropriate keys.
+Fill out the .env file with the appropriate keys. Make sure that the Deepgram API key has the "Member" role.
 
 ```
 ELEVENLABS_API_KEY=...
