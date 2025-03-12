@@ -32,7 +32,7 @@ def kill_subprocesses():
 subprocesses = []
 atexit.register(kill_subprocesses)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 CORS(app)
 
 
@@ -42,17 +42,17 @@ def index():
     print(
         f"page loaded from {ip_addr} {request.user_agent} {request.query_string.decode()}"
     )
-    return send_from_directory("static-pages", "index.html")
+    return send_from_directory(app.static_folder, "index.html")
 
 
-@app.route("/sound/<path:path>")
-def send_sound(path):
-    return send_from_directory("sound", path)
+@app.route("/sound/<path:filename>")
+def send_sound(filename):
+    return send_from_directory(os.path.join(app.static_folder, "sound"), filename)
 
 
 @app.route("/style.css")
 def stylesheet():
-    return send_from_directory("static-pages", "style.css")
+    return send_from_directory(app.static_folder, "style.css")
 
 
 @app.route("/delete-completed")
@@ -62,7 +62,7 @@ def delete_completed_route():
 
 @app.route("/run")
 def run():
-    return send_from_directory("static-pages", "run.html")
+    return send_from_directory(app.static_folder, "run.html")
 
 
 @app.route("/update-script")
@@ -137,5 +137,3 @@ def spin_up_bot():
     subprocesses.append((room_url, proc))
 
     return jsonify({"room_url": room_url}), 200
-
-AutoIndex(app, browse_root=os.path.curdir, exclude_patterns=[r'.*', '*.env', '*.pyc', '__pycache__'])
