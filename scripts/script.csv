@@ -32,11 +32,11 @@ speak,,I hope that I can be an upgrade to the inner voice you were born with.,Ik
 start_collecting_messages,,,,,
 speak,,"Now, help me improve. How would you like the voice in your head to be different?","Zo. Vertel eens, hoe zou deze stem nog beter bij jou kunnen passen? Wat kan ik nog aanpassen?",,
 listen,,,,I'd like to pay even more attention to the love and joy in the world.,Ik wil graag nog meer aandacht besteden aan de liefde en vreugde in de wereld.
-speak,,What do you wish the voice in your head could help you do? Are there aspects of your personality or behaviors you’d like to change?,Waar zou je willen dat de stem in je hoofd je bij zou helpen? Zijn er dingen die je aan jezelf zou willen veranderen? Hoe je bent of hoe je je gedraagt? ,,
+speak,,What do you wish the voice in your head could help you do? Are there aspects of your personality or behaviors you'd like to change?,Waar zou je willen dat de stem in je hoofd je bij zou helpen? Zijn er dingen die je aan jezelf zou willen veranderen? Hoe je bent of hoe je je gedraagt? ,,
 listen,,,,I want to be a little less robotic.,Ik wil wat minder robotachtig zijn.
 speak,,Would you like to have better focus? Or be more interesting? Or pay closer attention to people around you? ,Wil je beter op kunnen letten? Of interessanter zijn? Of misschien beter letten op de mensen om je heen? ,,
 listen,,,,"I would love to have more focus, yes.","Ik zou graag meer focus hebben, ja."
-speak,,Thank you. Is there anything else you’d like me to know?,Bedankt. Is er nog iets anders waarvan je wilt dat ik het weet?,,
+speak,,Thank you. Is there anything else you'd like me to know?,Bedankt. Is er nog iets anders waarvan je wilt dat ik het weet?,,
 listen,,,,"No, that's it, thank you.","Nee, dat is het, dank je."
 get_collected_messages,desired_voice,,,,
 stop_recording,,,,,
@@ -53,7 +53,7 @@ speak,,"We sound pretty similar, right?","En? We klinken redelijk hetzelfde, toc
 wait,,1,,,
 speak,,"Ok, I am now oriented and ready to go out into the world. I will go about my life as I would normally, and I know this voice in my head will be here to help. When I talk to other people, my inner voice will listen, and weigh in with thoughts as I do.","Ok, ik ben er klaar voor. Ik ben nu jouw persoonlijke stem en jij kunt met mij rond gaan lopen. Ik luister mee met gesprekken en reageer zoals jij me hebt geleerd.",,
 speak,,"I can put the phone in my pocket and take it with me as I exit this booth now. It's ok if the screen is off. I'm expecting to hear from the voice in my head regularly, but if a few minutes pass and I don't hear anything, I'll check in with the staff for help.",Je mag de telefoon in je zak stoppen en het geeft niet als het scherm uitgaat. Ga eens mensen zoeken om mee te praten?,,
-speak,,Now I think I will exit this booth and go explore. Maybe I can find some people to talk with?,En als je niets hoort kan je altijd even naar de assistenten lopen.,,
+speak,,Now I think I will exit this booth and go explore the plaza. Maybe I can find some people to talk with?,En als je niets hoort kan je altijd even naar de assistenten lopen.,,
 experience_loop,entire_transcript,summary_prompt,,,
 convert_experience_to_memory,memory,entire_transcript,,,
 speak,,I feel it's almost time to return back to the onboarding location. I've really enjoyed this time. I will be thinking about this for a while.,Ik heb het gevoel dat het tijd is om terug te gaan naar het startpunt. Ik heb echt veel lol gehad. Ik ga hier nog wel een tijdje over nadenken. ,,
@@ -63,5 +63,5 @@ wait,,1,,,
 set_voice,,Matilda,Charlotte,,
 speak,,"Hello {name}, it's now time to return to the inner voice you were born with. But... {memory}","Hallo {name}, het is nu tijd om weer terug te gaan naar de innerlijke stem waarmee je bent geboren. Maar... {memory}",,
 listen,,,,,
-speak,,Thank you. I hope you have enjoyed this time with the Voice in My Head. Please return to the place where you picked up this phone. Goodbye.,Bedankt. Ik hoop dat je het leuk vond om even met deze stem door te brengen. Ga nu terug naar de startplek en geef je telefoon en oortje terug aan de assistent. Tot ziens. ,,
+speak,,Thank you. I hope you have enjoyed this time with the voice in your head. Please return to where you left your ID and give your phone and earbud to the usher. Goodbye.,Bedankt. Ik hoop dat je het leuk vond om even met deze stem door te brengen. Ga nu terug naar de startplek en geef je telefoon en oortje terug aan de assistent. Tot ziens. ,,
 play_sound,,jingle-goodbye,,,
