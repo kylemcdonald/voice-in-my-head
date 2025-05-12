@@ -63,10 +63,21 @@
 
         // Show controls first since audio might fail
         const button = document.getElementById('start-button');
-        button.classList.remove('bg-gray-500');
-        button.classList.add('bg-blue-500', 'hover:bg-blue-700');
-        button.innerText = 'Tap to Start';
-        button.disabled = false;
+        
+        // Start countdown
+        let count = 5;
+        const countdownInterval = setInterval(() => {
+          button.innerText = count.toString();
+          count--;
+          
+          if (count < 0) {
+            clearInterval(countdownInterval);
+            button.innerText = 'Tap to Start';
+            button.classList.remove('bg-gray-500');
+            button.classList.add('bg-blue-500', 'hover:bg-blue-700');
+            button.disabled = false;
+          }
+        }, 1000);
 
         // Request audio permissions explicitly before enumerating devices
         navigator.mediaDevices.getUserMedia({ audio: true })
