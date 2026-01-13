@@ -14,7 +14,7 @@ def build_dialog(messages, mapping={"user": "Patient", "assistant": "Therapist"}
     return "\n".join(dialog)
 
 class ChatGPT:
-    def __init__(self, model="gpt-4o", language="en"):
+    def __init__(self, model="gpt-5.2", language="en"):
         self.openai = openai.OpenAI()
         self.model = model
         self.language = language
@@ -38,7 +38,7 @@ class ChatGPT:
             log({"chatgpt": messages})
             start_time = time()
             result = self.openai.chat.completions.create(
-                model=self.model, messages=messages, max_tokens=1024
+                model=self.model, messages=messages, max_completion_tokens=1024
             )
             request_duration = time() - start_time
             content = result.choices[0].message.content
