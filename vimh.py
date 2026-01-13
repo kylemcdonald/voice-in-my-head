@@ -137,8 +137,8 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         log({"on_participant_left": participant, "reason": reason})
 
     def on_transcription_message(self, message):
-        # messages from the bot have no user_name or empty user_name
-        if not message.get("user_name"):
+        # messages from the bot have no user_name key at all
+        if "user_name" not in message:
             return
         if "text" not in message:
             return
