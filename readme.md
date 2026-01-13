@@ -46,7 +46,7 @@ Create the environment:
 conda create -y -n vimh python=3.9
 conda activate vimh
 conda install -y -c conda-forge libstdcxx-ng # needed for daily-python
-conda install -y pytorch torchvision torchaudio cpuonly -c pytorch
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 ```
 

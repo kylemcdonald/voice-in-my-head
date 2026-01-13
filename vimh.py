@@ -13,7 +13,7 @@ from srt_writer import SrtWriter
 from script_reader import ScriptReader
 from elevenlabs_helpers import clone_voice, remove_old_voices
 from chatgpt import ChatGPT
-from daily_helpers import get_meeting_token
+from daily_helpers import get_meeting_token, enable_transcription
 from helpers import (
     chunker,
     write_file_from_generator,
@@ -95,6 +95,14 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
 
         self.voice_list = remove_old_voices(elevenlabs_client)
         self.name_to_voice = {e.name: e.voice_id for e in self.voice_list}
+        # Also create a mapping for partial name lookups (e.g., "Matilda" -> "Matilda - Knowledgable, Professional")
+        self.partial_name_to_voice = {}
+        for e in self.voice_list:
+            # Use the first word/part of the name as a key for partial matching
+            short_name = e.name.split(" - ")[0].split()[0] if " - " in e.name else e.name.split()[0]
+            # Only add if not already present (prefer first match)
+            if short_name not in self.partial_name_to_voice:
+                self.partial_name_to_voice[short_name] = e.voice_id
         self.default_voice = default_voice
 
         log("done with init")
@@ -116,12 +124,23 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         log("on_transcription_started")
         log(status)
 
+    def on_transcription_error(self, error):
+        log({"on_transcription_error": error})
+
+    def on_transcription_stopped(self, stopped_by, stopped_by_error=None):
+        log({"on_transcription_stopped": stopped_by, "stopped_by_error": stopped_by_error})
+
+    def on_participant_joined(self, participant):
+        log({"on_participant_joined": participant})
+
+    def on_participant_left(self, participant, reason):
+        log({"on_participant_left": participant, "reason": reason})
+
     def on_transcription_message(self, message):
-        # messages from this app have no user_name
-        if "user_name" not in message:
+        # messages from the bot have no user_name or empty user_name
+        if not message.get("user_name"):
             return
         if "text" not in message:
-            log("no text in message")
             return
         text = message["text"]
         log({"transcription": text})
@@ -218,6 +237,9 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         if voice in self.name_to_voice:
             voice_id = self.name_to_voice[voice]
             print("voice in self.name_to_voice, voice_id: ", voice_id)
+        elif voice in self.partial_name_to_voice:
+            voice_id = self.partial_name_to_voice[voice]
+            print("voice in self.partial_name_to_voice, voice_id: ", voice_id)
 
         hash = hashlib.sha256((voice + text).encode("utf-8")).hexdigest()
         output_filename = f"cache/{voice}/{hash}.mp3"
@@ -278,10 +300,6 @@ class VoiceInMyHead(EventHandler, ScriptReader, ChatGPT):
         self.client.start_transcription(
             {
                 "language": self.language_code,
-                "model": "2-general",
-                "tier": "nova",
-                "profanity_filter": False,
-                "redact": False,
             },
             completion=self.on_start_transcription,
         )
@@ -407,6 +425,13 @@ def main():
     args, _ = parser.parse_known_args()
 
     log(args)
+
+    # Ensure Daily domain is configured with Deepgram API key for transcription
+    deepgram_api_key = os.environ.get("DEEPGRAM_API_KEY")
+    if deepgram_api_key:
+        enable_transcription(os.environ["DAILY_API_KEY"], deepgram_api_key)
+    else:
+        log("Warning: DEEPGRAM_API_KEY not set, transcription may not work")
 
     Daily.init()
 
