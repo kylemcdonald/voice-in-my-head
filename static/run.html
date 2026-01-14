@@ -23,6 +23,13 @@
     let localStream = null;
     let started = false;
 
+    // Warn before leaving the page
+    window.addEventListener('beforeunload', (event) => {
+      event.preventDefault();
+      event.returnValue = 'Are you sure you want to exit?';
+      return 'Are you sure you want to exit?';
+    });
+
     window.addEventListener('DOMContentLoaded', async () => {
       // Show debug button on dev server
       if (window.location.hostname.includes('dev')) {
