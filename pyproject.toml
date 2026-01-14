@@ -1,0 +1,31 @@
+[project]
+name = "voice-in-my-head"
+version = "2.0.0"
+description = "Real-time voice interaction system with WebRTC, Deepgram, ElevenLabs, and OpenAI"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.9",
+    "aiohttp-cors>=0.7",
+    "aiortc>=1.9",
+    "aiofiles>=24.1",
+    "websockets>=13.0",
+    "elevenlabs>=1.7",
+    "openai>=1.56",
+    "python-dotenv>=1.0",
+    "numpy>=1.26",
+    "av>=12.0",
+    "ffmpeg-python>=0.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]

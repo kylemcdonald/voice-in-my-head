@@ -13,15 +13,15 @@
   <script>
     function init(language) {
       let params = new URLSearchParams(window.location.search);
-      params.set("language", language);
-      fetch('/spin-up-bot?' + params.toString(), {
+      params.set("l", language);
+      fetch('/spin-up-session?' + params.toString(), {
         method: 'POST',
       })
         .then((res) => {
           if (!res.ok) {
             res.text().then((text) => {
               console.error(
-                'failed to spin up bot:',
+                'failed to spin up session:',
                 res.status,
                 res.statusText,
                 text,
@@ -34,12 +34,13 @@
           return res.json();
         })
         .then((data) => {
-          const url = `run?room_url=${data.room_url}`;
+          if (!data) return;
+          const url = `run?session_id=${data.session_id}`;
           console.log(`redirecting to ${url}`)
           window.location.href = url;
         })
         .catch((e) => {
-          console.error('failed to spin up bot', e);
+          console.error('failed to spin up session', e);
           const errorMessage = document.getElementById('error-message');
           errorMessage.innerText = e.message;
         });

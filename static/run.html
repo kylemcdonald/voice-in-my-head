@@ -10,166 +10,217 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@1,500&display=swap" rel="stylesheet">
-  <style>
-    #prebuilt {
-      display: none;
-    }
-  </style>
-  <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
   <script>
+    // Configuration
+    const ICE_SERVERS = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ];
+
+    // State
+    let pc = null;
+    let ws = null;
+    let localStream = null;
     let started = false;
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Show debug button on dev server
       if (window.location.hostname.includes('dev')) {
         const debugButton = document.getElementById('debug-button');
         debugButton.classList.remove('hidden');
       }
 
-      const call = createCallObject();
-
       const params = new URLSearchParams(window.location.search);
-      call.join({
-        url: params.get('room_url')
-      });
-    });
+      const sessionId = params.get('session_id');
 
-    function createCallObject() {
-      const prebuilt = document.getElementById('prebuilt');
-      const call = window.DailyIframe.createFrame(prebuilt, {
-        dailyConfig: {
-          inputSettings: {
-            audio: {
-              settings: {
-                echoCancellation: true,
-                noiseSuppression: true
-              }
-            }
-          }
-        }
-      });
-      window.call = call;
-
-      let meeting_joined = false;
-
-      function maybeReady() {
-        if (!meeting_joined) {
-          console.log("meeting not joined");
-          return;
-        }
-        if (Object.keys(window.call.participants()).length === 1) {
-          console.log("no other participants");
-          return;
-        }
-
-        // Show controls first since audio might fail
-        const button = document.getElementById('start-button');
-        
-        // Start countdown
-        let count = 5;
-        const countdownInterval = setInterval(() => {
-          button.innerText = count.toString();
-          count--;
-          
-          if (count < 0) {
-            clearInterval(countdownInterval);
-            button.innerText = 'Tap to Start';
-            button.classList.remove('bg-gray-500');
-            button.classList.add('bg-blue-500', 'hover:bg-blue-700');
-            button.disabled = false;
-          }
-        }, 1000);
-
-        // Request audio permissions explicitly before enumerating devices
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(() => {
-            return call.enumerateDevices();
-          })
-          .then((devices) => {
-            console.log("devices changed");
-            console.log(devices.devices);
-            
-            // Check if we're on an iPhone
-            const isIPhone = /iPhone/i.test(navigator.userAgent);
-            console.log("Device detection - User Agent:", navigator.userAgent);
-            console.log("Device detection - Is iPhone:", isIPhone);
-            
-            if (isIPhone) {
-              console.log("Device detection - On iPhone, will check available audio devices");
-              const audioDevices = devices.devices.filter(d => d.kind === "audioinput" && !d.label.includes("iPhone"));
-              console.log("Device detection - Found", audioDevices.length, "non-iPhone audio devices");
-              if (audioDevices.length > 0) {
-                const device = audioDevices[0];
-                console.log("using audio device", device.label);
-                window.call.sendAppMessage({ "message": "using audio device", "deviceLabel": device.label});
-                call.setInputDevicesAsync({
-                  audioDeviceId: device.deviceId,
-                }).catch(err => {
-                  console.warn("Failed to set audio device, falling back to default:", err);
-                });
-              }
-            } else {
-              console.log("Not on iPhone - using default audio device");
-              window.call.sendAppMessage({ "message": "using default audio device" });
-            }
-          })
-          .catch(error => {
-            console.warn("Error accessing microphone - will try to continue:", error);
-          });
+      if (!sessionId) {
+        showError('Missing session_id');
+        return;
       }
 
-      call
-        .on('joined-meeting', () => {
-          console.log('joined-meeting');
-          meeting_joined = true;
-          maybeReady();
+      try {
+        await initWebRTC(sessionId);
+      } catch (err) {
+        console.error('Failed to initialize:', err);
+        showError(err.message);
+      }
+    });
 
-          // wait 10 seconds and give up if there's no bot
-          setTimeout(async () => {
-            const pax = call.participants();
-            console.log({ pax });
-            if (Object.keys(pax).length === 1) {
-              window.alert(
-                "Sorry! The Voice In My Head bot is unavailable at the moment.",
-              );
-              // go to the previous page
-              // window.history.back();
-            }
-          }, 10 * 1000);
-        })
-        .on('participant-joined', (e) => {
-          console.log(e);
-          maybeReady();
-        })
-        .on('participant-left', (e) => {
-          console.log(e);
-          if (e.participant.user_name === "voice") {
-            // window.history.back();
-          }
-        })
-        .on('app-message', (msg) => {
-          // console.log(msg);
+    function showError(message) {
+      const button = document.getElementById('start-button');
+      button.innerText = 'Error';
+      button.classList.add('bg-red-500');
+      console.error(message);
+    }
 
-          if (msg.data.event === "chat-msg") {
-            addMessage(msg.data.user, msg.data.message);
+    async function initWebRTC(sessionId) {
+      // Request microphone permission first
+      console.log('Requesting microphone...');
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
           }
         });
-      return call;
+        console.log('Got microphone access');
+      } catch (err) {
+        console.error('Microphone access denied:', err);
+        showError('Microphone access required');
+        return;
+      }
+
+      // Create WebSocket connection for signaling
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/${sessionId}`;
+      console.log('Connecting to WebSocket:', wsUrl);
+
+      ws = new WebSocket(wsUrl);
+      window.ws = ws; // For debugging
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+      };
+
+      ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+        showError('Connection failed');
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket closed');
+      };
+
+      ws.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+        console.log('Received:', msg.type);
+
+        switch (msg.type) {
+          case 'offer':
+            await handleOffer(msg.sdp);
+            break;
+          case 'ice-candidate':
+            await handleIceCandidate(msg);
+            break;
+          case 'app-message':
+            handleAppMessage(msg.data);
+            break;
+          default:
+            console.log('Unknown message type:', msg.type);
+        }
+      };
+    }
+
+    async function handleOffer(sdp) {
+      console.log('Handling SDP offer');
+
+      // Create peer connection
+      pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      window.pc = pc; // For debugging
+
+      // Add local tracks
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+        console.log('Added local track:', track.kind);
+      });
+
+      // Handle remote tracks (audio from server)
+      pc.ontrack = (event) => {
+        console.log('Got remote track:', event.track.kind);
+        if (event.track.kind === 'audio') {
+          // Create audio element to play remote audio
+          const audio = document.createElement('audio');
+          audio.srcObject = event.streams[0];
+          audio.autoplay = true;
+          document.body.appendChild(audio);
+          console.log('Audio playback started');
+        }
+      };
+
+      // Handle ICE candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log('Sending ICE candidate');
+          ws.send(JSON.stringify({
+            type: 'ice-candidate',
+            candidate: event.candidate.candidate,
+            sdpMid: event.candidate.sdpMid,
+            sdpMLineIndex: event.candidate.sdpMLineIndex,
+          }));
+        }
+      };
+
+      // Handle connection state changes
+      pc.onconnectionstatechange = () => {
+        console.log('Connection state:', pc.connectionState);
+        if (pc.connectionState === 'connected') {
+          onConnected();
+        } else if (pc.connectionState === 'failed') {
+          showError('Connection failed');
+        }
+      };
+
+      // Set remote description and create answer
+      await pc.setRemoteDescription({ type: 'offer', sdp: sdp });
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      // Send answer
+      ws.send(JSON.stringify({
+        type: 'answer',
+        sdp: answer.sdp,
+      }));
+      console.log('Sent SDP answer');
+    }
+
+    async function handleIceCandidate(msg) {
+      if (!pc) return;
+
+      try {
+        await pc.addIceCandidate({
+          candidate: msg.candidate,
+          sdpMid: msg.sdpMid,
+          sdpMLineIndex: msg.sdpMLineIndex,
+        });
+        console.log('Added ICE candidate');
+      } catch (err) {
+        console.warn('Failed to add ICE candidate:', err);
+      }
+    }
+
+    function handleAppMessage(data) {
+      if (data.event === 'chat-msg') {
+        addMessage(data.user, data.message);
+      }
+    }
+
+    function onConnected() {
+      console.log('WebRTC connected!');
+
+      // Enable start button immediately
+      const button = document.getElementById('start-button');
+      button.innerText = 'Tap to Start';
+      button.classList.remove('bg-gray-500');
+      button.classList.add('bg-blue-500', 'hover:bg-blue-700');
+      button.disabled = false;
     }
 
     function start() {
-      window.call.sendAppMessage({ "message": "start" });
+      // Send start message
+      ws.send(JSON.stringify({
+        type: 'app-message',
+        data: { message: 'start' }
+      }));
+
       const button = document.getElementById('start-button');
       button.classList.add('hidden');
       started = true;
     }
 
     function toggleDebug() {
-      const prebuilt = document.getElementById('prebuilt');
-      if (prebuilt.style.display === 'none') {
-        prebuilt.style.display = 'block';
-      } else {
-        prebuilt.style.display = 'none';
-      }
+      const debug = document.getElementById('debug-panel');
+      debug.classList.toggle('hidden');
     }
 
     function addMessage(user, text) {
@@ -186,6 +237,9 @@
       }
       div.innerText = text;
       transcript.appendChild(div);
+
+      // Auto-scroll to bottom
+      transcript.scrollTop = transcript.scrollHeight;
     }
   </script>
 </head>
@@ -196,7 +250,10 @@
     class="flex flex-col justify-end items-center fixed bottom-0 left-0 w-full h-full p-2 overflow-y-scroll">
   </div>
 
-  <div id="prebuilt"></div>
+  <div id="debug-panel" class="hidden fixed top-16 left-0 w-full p-3 bg-gray-900 text-white font-mono text-sm">
+    <p>WebRTC Connection</p>
+    <p id="debug-state">State: initializing</p>
+  </div>
 
   <div id="controls" class="flex justify-between items-center fixed top-0 left-0 w-full p-3">
     <button id="start-button"

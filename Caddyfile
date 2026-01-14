@@ -1,0 +1,12 @@
+# Caddyfile for Voice In My Head
+#
+# Local development:
+#   caddy run
+#
+# Production (set DOMAIN environment variable):
+#   DOMAIN=vimh.example.com caddy run
+#
+
+{$DOMAIN:localhost} {
+    reverse_proxy localhost:8000
+}
