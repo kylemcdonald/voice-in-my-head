@@ -112,6 +112,74 @@ LOCATION=...
 ### Sound Files
 Audio files in `sound/` must be: mono, 48kHz, 16-bit WAV.
 
+## Deployment (Digital Ocean)
+
+### System Dependencies
+**Important**: These must be installed on the server:
+```sh
+apt-get update
+apt-get install -y ffmpeg git curl
+```
+
+**ffmpeg is required** for voice cloning (converts WAV to MP3 for ElevenLabs API).
+
+### Install uv and Caddy
+```sh
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Caddy
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+apt-get update && apt-get install -y caddy
+```
+
+### Clone and Setup
+```sh
+cd /opt
+git clone -b nodaily https://github.com/kylemcdonald/voice-in-my-head.git vimh
+cd vimh
+uv sync
+```
+
+### Configure Caddy (`/etc/caddy/Caddyfile`)
+```
+your-domain.example.com {
+    reverse_proxy localhost:8000
+}
+```
+
+### Systemd Service (`/etc/systemd/system/vimh.service`)
+```ini
+[Unit]
+Description=Voice In My Head
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/vimh
+Environment="PATH=/usr/bin:/usr/local/bin:/root/.local/bin:/bin"
+ExecStart=/root/.local/bin/uv run python server_async.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Start Services
+```sh
+systemctl daemon-reload
+systemctl enable vimh
+systemctl start vimh
+systemctl restart caddy
+```
+
+### Recommended Server Specs
+- **4 simultaneous sessions**: 2 vCPU, 4GB RAM
+- **8 simultaneous sessions**: 4 vCPU, 8GB RAM
+
 ## Deprecated Files
 
 Old Daily.co-based implementation is in `_deprecated/`:

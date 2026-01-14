@@ -7,96 +7,100 @@
 3. Install the eSIM, and turn on Data Roaming.
 4. Check the [latency to cloud servers](https://cloudpingtest.com/digital_ocean).
 
-## Setup
+## Server Setup
 
-Create a cloud server. If installing on Digital Ocean, make sure to enable [the agent with advanced metrics](https://docs.digitalocean.com/products/monitoring/how-to/install-agent/).
+Create a cloud server on Digital Ocean. For 4 simultaneous sessions, 2 vCPU and 4GB RAM is sufficient. After creating the machine, add the IP address to the appropriate DNS record.
 
-For 4 users, 8 CPUs and 16 GB RAM is recommended. After creating the machine, add the IP address to the appropriate DNS record.
-
-Prep the packages:
+### Install System Dependencies
 
 ```sh
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y build-essential # needed for streamp3 package
-sudo apt install -y libmp3lame-dev # needed for elevenlabs
-sudo apt install -y ffmpeg # for processing elevenlabs input
+sudo apt install -y ffmpeg git curl  # ffmpeg is REQUIRED for voice cloning
 ```
 
-Install Anaconda:
+**Important**: `ffmpeg` is required for voice cloning - it converts recorded audio to MP3 for the ElevenLabs API.
+
+### Install uv (Python package manager)
 
 ```sh
-wget https://repo.anaconda.com/archive/Anaconda3-2024.06-1-Linux-x86_64.sh
-bash Anaconda3-2024.06-1-Linux-x86_64.sh -b
-$HOME/anaconda3/bin/conda init
+curl -LsSf https://astral.sh/uv/install.sh | sh
 source ~/.bashrc
-rm Anaconda3-2024.06-1-Linux-x86_64.sh
 ```
 
-Clone the repo:
+### Install Caddy (HTTPS reverse proxy)
 
 ```sh
-git clone https://github.com/kylemcdonald/voice-in-my-head.git
-cd voice-in-my-head
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install -y caddy
 ```
 
-Create the environment:
+### Clone and Install
 
 ```sh
-conda create -y -n vimh python=3.9
-conda activate vimh
-conda install -y -c conda-forge libstdcxx-ng # needed for daily-python
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements.txt
+cd /opt
+sudo git clone -b nodaily https://github.com/kylemcdonald/voice-in-my-head.git vimh
+cd vimh
+sudo uv sync
 ```
 
-Setup nginx:
+### Configure Environment
 
-```sh
-# first, edit .nginx to represent the desired subdomain
-sudo apt install -y nginx
-sudo ufw allow 'Nginx Full'
-sudo cp .nginx /etc/nginx/sites-available/vimh.iyoiyo.studio
-sudo ln -s /etc/nginx/sites-available/vimh.iyoiyo.studio /etc/nginx/sites-enabled/
-```
-
-Setup certbot:
-
-```sh
-sudo snap install --classic certbot
-sudo ln -s /snap/bin/certbot /usr/bin/certbot
-sudo certbot --nginx
-```
-
-Install nvm, Node, and Tailwind:
-
-```sh
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-source ~/.bashrc
-nvm install 16
-npm install -D tailwindcss
-npx tailwindcss init
-npm run buildcss
-```
-
-Fill out the .env file with the appropriate keys. Make sure that the Deepgram API key has the "Member" role.
+Create `/opt/vimh/.env`:
 
 ```
 ELEVENLABS_API_KEY=...
 OPENAI_API_KEY=...
-DAILY_API_KEY=...
 DEEPGRAM_API_KEY=...
 TURN_TIME_SECONDS=50
 TOTAL_TIME_MINUTES=25
-ROOM_EXPIRE_MINUTES=35
 LOCATION=...
 ```
 
-Install the service:
+### Configure Caddy
+
+Edit `/etc/caddy/Caddyfile`:
+
+```
+your-domain.example.com {
+    reverse_proxy localhost:8000
+}
+```
+
+### Create Systemd Service
+
+Create `/etc/systemd/system/vimh.service`:
+
+```ini
+[Unit]
+Description=Voice In My Head
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/vimh
+Environment="PATH=/usr/bin:/usr/local/bin:/root/.local/bin:/bin"
+ExecStart=/root/.local/bin/uv run python server_async.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Start Services
 
 ```sh
-bash install-service.sh
+sudo systemctl daemon-reload
+sudo systemctl enable vimh
+sudo systemctl start vimh
+sudo systemctl restart caddy
 ```
+
+Caddy will automatically obtain an SSL certificate from Let's Encrypt.
 
 ## Setting up the iPhones
 
@@ -135,24 +139,18 @@ bash install-service.sh
     * Time Limit OFF
 * Tap Guided Access, then tap Start.
 
-## Testing
-
-Run server with Flask autoreloading:
+## Local Development
 
 ```sh
-flask --app server.py --debug run
-```
+# Install dependencies
+uv sync
 
-Run the server with gunicorn:
+# Run server
+uv run python server_async.py
 
-```sh
-gunicorn -w 4 server:app
-```
-
-Shortcut for running gunicorn:
-
-```sh
-./run.sh
+# For HTTPS (required for WebRTC microphone access)
+# Run Caddy in another terminal:
+caddy run
 ```
 
 ## Setting the Duration
@@ -161,13 +159,11 @@ The duration of the experience is controlled in the .env file.
 
 ## Notes on sound design
 
-Sounds should match the audio stream:
+Sounds should match the WebRTC audio stream:
 
-* 1 channels (mono)
-* 44.1kHz
+* 1 channel (mono)
+* 48kHz (WebRTC native sample rate)
 * 16-bit depth
-
-Note they might get slightly glitched by the compression and streaming algorithms.
 
 They should also always fade out quickly, or sometimes they can create a lingering noise.
 
