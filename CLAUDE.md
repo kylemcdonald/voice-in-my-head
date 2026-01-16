@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Voice In My Head (VIMH) is a real-time voice interaction system using:
 - **aiortc** for native WebRTC audio streaming (replaced Daily.co)
-- **Deepgram** for real-time speech-to-text (direct WebSocket streaming)
+- **AssemblyAI** for real-time speech-to-text (with configurable endpointing)
 - **ElevenLabs** for text-to-speech with voice cloning
 - **OpenAI GPT-5.2** for conversational AI
 
@@ -53,7 +53,7 @@ npm run buildcss    # Watch mode for Tailwind CSS
 
 **`voice_session.py`** - Main session class:
 - Manages WebRTC connection via `webrtc_handler.py`
-- Streams audio to Deepgram for transcription
+- Streams audio to AssemblyAI for transcription
 - Plays TTS audio from ElevenLabs
 - Executes CSV scripts with `AsyncScriptReader`
 - Handles ChatGPT conversations
@@ -64,10 +64,11 @@ npm run buildcss    # Watch mode for Tailwind CSS
 - Manages ICE candidate exchange
 - Routes audio tracks
 
-**`deepgram_stream.py`** - Transcription:
-- Direct WebSocket connection to Deepgram
-- Uses utterance detection instead of local VAD
+**`assemblyai_stream.py`** - Transcription:
+- Direct WebSocket connection to AssemblyAI Universal-Streaming
+- Configurable endpointing thresholds for less sensitive VAD
 - Returns `TranscriptMessage` objects
+- Provides `on_transcript`, `on_utterance_end`, and `on_speech_started` callbacks
 
 **`audio_tracks.py`** - Audio handling:
 - `AudioOutputTrack` - Sends TTS audio to browser
@@ -77,8 +78,8 @@ npm run buildcss    # Watch mode for Tailwind CSS
 ### Audio Pipeline
 
 1. Browser mic → WebRTC → aiortc → `AudioInputHandler`
-2. Handler streams audio to Deepgram WebSocket
-3. Deepgram returns transcripts with utterance detection
+2. Handler streams audio to AssemblyAI WebSocket
+3. AssemblyAI returns transcripts with configurable end-of-turn detection
 4. GPT generates response
 5. ElevenLabs TTS → MP3 → PCM → `AudioOutputTrack` → WebRTC → browser
 
@@ -86,6 +87,49 @@ npm run buildcss    # Watch mode for Tailwind CSS
 - Sample rate: 48kHz (WebRTC native)
 - Channels: 1 (mono)
 - Bit depth: 16-bit signed PCM
+
+### Art Installation Structure
+
+The entire piece is an art installation with two main phases:
+
+1. **Interview/Onboarding** (~5-10 minutes): Guided conversation at the start where the system learns about the visitor, clones their voice, etc. Driven by CSV scripts in `scripts/`.
+
+2. **Experience Loop** (until `TOTAL_TIME_MINUTES` runs out): The core of the piece. The system overhears conversations and periodically interjects with responses.
+
+### Experience Loop Timing
+
+The `experience_loop()` in `voice_session.py` controls when interjections happen:
+1. **Listen phase**: Listen for `TURN_TIME_SECONDS` (default 50s)
+2. **Wait-for-silence phase**: After turn time, wait for `WAIT_DURATION_SECONDS` (default 2s) of continuous silence before interjecting
+3. **Max timeout**: If `MAX_TURN_TIME_SECONDS` (default 90s) total elapsed without finding silence, interject anyway
+4. **Respond**: Generate and speak a response, then repeat
+
+This avoids interrupting visitors mid-conversation by waiting for natural pauses.
+
+### AssemblyAI Speech Events
+
+`assemblyai_stream.py` provides three callbacks:
+- `on_transcript(TranscriptMessage)` - Called when transcription is ready
+- `on_utterance_end()` - Called when end of turn detected (configurable sensitivity)
+- `on_speech_started()` - Called when speech begins (user started speaking)
+
+These are used to track `_is_speaking` state in `VoiceSession` for the wait-for-silence logic.
+
+### AssemblyAI Endpointing Configuration
+
+AssemblyAI's endpointing is configurable via environment variables:
+- `END_OF_TURN_CONFIDENCE` - Confidence threshold for end of turn (0.0-1.0, default 0.5)
+- `MIN_SILENCE_CONFIDENT_MS` - Min silence (ms) when confidence met (default 600)
+- `MAX_TURN_SILENCE_MS` - Max silence (ms) before forcing end of turn (default 1500)
+
+Higher values = less sensitive (fewer false positives, better for noisy environments).
+
+### Browser UI Indicators
+
+The frontend (`static/run.html`) shows a 🗣️ emoji overlay when the visitor is speaking. This is controlled via app-messages:
+```javascript
+// Server sends: {type: "app-message", data: {event: "user-speaking", speaking: true/false}}
+```
 
 ### Script Format
 Scripts in `scripts/*.csv` with columns: `function`, `output`, `input`, and optional language columns.
@@ -97,10 +141,17 @@ Scripts in `scripts/*.csv` with columns: `function`, `output`, `input`, and opti
 ```
 ELEVENLABS_API_KEY=...
 OPENAI_API_KEY=...
-DEEPGRAM_API_KEY=...
-TURN_TIME_SECONDS=50
-TOTAL_TIME_MINUTES=25
+ASSEMBLYAI_API_KEY=...
+TURN_TIME_SECONDS=50           # Initial listening duration before looking for silence
+WAIT_DURATION_SECONDS=2        # Silence duration needed before interjecting
+MAX_TURN_TIME_SECONDS=90       # Max wait time, interject anyway after this
+TOTAL_TIME_MINUTES=25          # Total session duration
 LOCATION=...
+
+# AssemblyAI endpointing (optional, less-sensitive defaults)
+END_OF_TURN_CONFIDENCE=0.5     # Confidence threshold (0.0-1.0)
+MIN_SILENCE_CONFIDENT_MS=600   # Min silence when confident (ms)
+MAX_TURN_SILENCE_MS=1500       # Max silence before end of turn (ms)
 ```
 
 ### Signaling Protocol (WebSocket)
@@ -186,4 +237,5 @@ Old Daily.co-based implementation is in `_deprecated/`:
 - `vimh_daily.py` - Old main class using Daily SDK
 - `server_flask.py` - Old Flask server
 - `daily_helpers.py` - Daily.co API helpers
-- `vad.py` - Silero VAD (replaced by Deepgram utterance detection)
+- `vad.py` - Silero VAD (replaced by AssemblyAI endpointing)
+

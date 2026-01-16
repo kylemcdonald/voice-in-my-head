@@ -1,7 +1,8 @@
 {
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "buildcss": "npx tailwindcss -i ./tailwind/input.css -o ./static-pages/style.css --watch"
+    "buildcss": "npx tailwindcss -i ./tailwind/input.css -o ./static/style.css --watch",
+    "css": "npx tailwindcss -i ./tailwind/input.css -o ./static/style.css --minify"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.19"

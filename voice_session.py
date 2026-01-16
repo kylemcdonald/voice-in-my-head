@@ -3,7 +3,7 @@ Voice session manager - async replacement for VoiceInMyHead class.
 
 Manages a complete voice interaction session:
 - WebRTC audio connection
-- Deepgram transcription
+- AssemblyAI transcription (with configurable endpointing)
 - ElevenLabs TTS
 - OpenAI ChatGPT conversation
 - Script execution
@@ -27,7 +27,7 @@ from openai import AsyncOpenAI
 from elevenlabs import AsyncElevenLabs, VoiceSettings
 
 from webrtc_handler import WebRTCSession
-from deepgram_stream import DeepgramStream, TranscriptMessage
+from assemblyai_stream import AssemblyAIStream, TranscriptMessage
 from audio_tracks import (
     AudioOutputTrack,
     AudioInputHandler,
@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 # Configuration from environment
 TOTAL_TIME_MINUTES = int(os.getenv("TOTAL_TIME_MINUTES", "25"))
 TURN_TIME_SECONDS = int(os.getenv("TURN_TIME_SECONDS", "50"))
+WAIT_DURATION_SECONDS = float(os.getenv("WAIT_DURATION_SECONDS", "2"))
+MAX_TURN_TIME_SECONDS = int(os.getenv("MAX_TURN_TIME_SECONDS", "90"))
 
 
 class AsyncSrtWriter:
@@ -223,8 +225,8 @@ class VoiceSession:
         self._webrtc: Optional[WebRTCSession] = None
         self._send_message: Optional[Callable[[str], Awaitable[None]]] = None
 
-        # Deepgram transcription
-        self._deepgram: Optional[DeepgramStream] = None
+        # AssemblyAI transcription
+        self._transcription: Optional[AssemblyAIStream] = None
 
         # Session state
         self._started = False
@@ -240,6 +242,10 @@ class VoiceSession:
         # Transcription handling
         self._speech_queue: asyncio.Queue[str] = asyncio.Queue()
         self._last_utterance_time: Optional[float] = None
+
+        # Speech state tracking for wait-for-silence logic
+        self._is_speaking = False
+        self._silence_start_time: Optional[float] = None
 
         # Recording for voice cloning
         self._recording = False
@@ -272,6 +278,7 @@ class VoiceSession:
         """Send an app message to the client."""
         if self._send_message:
             msg = {"type": "app-message", "data": data}
+            logger.info(f"Sending app message: {data}")
             await self._send_message(json.dumps(msg))
 
     async def start_webrtc(self) -> None:
@@ -288,39 +295,56 @@ class VoiceSession:
         """Handle incoming audio track from browser."""
         logger.info("Audio track received from browser")
 
-        # Start Deepgram connection
-        await self._start_deepgram()
+        # Start AssemblyAI transcription connection
+        await self._start_transcription()
 
-        # Connect input handler to Deepgram
+        # Connect input handler to transcription stream
         if self._webrtc and self._webrtc.webrtc.input_handler:
-            self._webrtc.webrtc.input_handler.set_deepgram_stream(self._deepgram)
+            self._webrtc.webrtc.input_handler.set_transcription_stream(self._transcription)
 
-    async def _start_deepgram(self) -> None:
-        """Initialize Deepgram streaming connection."""
-        api_key = os.getenv("DEEPGRAM_API_KEY")
+    async def _start_transcription(self) -> None:
+        """Initialize AssemblyAI streaming connection."""
+        api_key = os.getenv("ASSEMBLYAI_API_KEY")
         if not api_key:
-            logger.error("DEEPGRAM_API_KEY not set")
+            logger.error("ASSEMBLYAI_API_KEY not set")
             return
 
-        self._deepgram = DeepgramStream(
+        # Configurable endpointing thresholds (less sensitive defaults)
+        end_of_turn_confidence = float(os.getenv("END_OF_TURN_CONFIDENCE", "0.5"))
+        min_silence_confident_ms = int(os.getenv("MIN_SILENCE_CONFIDENT_MS", "600"))
+        max_turn_silence_ms = int(os.getenv("MAX_TURN_SILENCE_MS", "1500"))
+
+        self._transcription = AssemblyAIStream(
             api_key=api_key,
-            language=self._language,
             sample_rate=SAMPLE_RATE,
-            channels=CHANNELS,
+            end_of_turn_confidence=end_of_turn_confidence,
+            min_silence_confident_ms=min_silence_confident_ms,
+            max_turn_silence_ms=max_turn_silence_ms,
             on_transcript=self._on_transcript,
             on_utterance_end=self._on_utterance_end,
+            # Note: on_speech_started available but not used for UI - we detect
+            # speech start from transcript reception which is more reliable.
         )
 
-        await self._deepgram.connect()
-        logger.info("Deepgram connected")
+        await self._transcription.connect()
+        logger.info("AssemblyAI connected")
 
     async def _on_transcript(self, msg: TranscriptMessage) -> None:
-        """Handle transcript from Deepgram."""
-        if not msg.is_final:
-            return  # Skip interim results for now
-
+        """Handle transcript from AssemblyAI."""
         text = msg.text.strip()
         if not text:
+            return
+
+        # Mark as speaking when we receive ANY transcript text (partial or final)
+        # This triggers the UI indicator immediately when speech is detected
+        if not self._is_speaking:
+            logger.info("Visitor started speaking (transcript received)")
+            self._is_speaking = True
+            self._silence_start_time = None
+            await self._send_app_message({"event": "user-speaking", "speaking": True})
+
+        # Skip further processing for interim results
+        if not msg.is_final:
             return
 
         logger.info(f"Transcript: {text}")
@@ -351,7 +375,60 @@ class VoiceSession:
 
     async def _on_utterance_end(self) -> None:
         """Handle utterance end (silence detected)."""
-        logger.debug("Utterance end detected")
+        if not self._is_speaking:
+            # Already not speaking, ignore duplicate event
+            return
+        logger.info("Visitor finished speaking")
+        self._is_speaking = False
+        self._silence_start_time = time.time()
+        # Notify client to hide speaking indicator
+        await self._send_app_message({"event": "user-speaking", "speaking": False})
+
+    async def _on_speech_started(self) -> None:
+        """
+        Handle speech started (visitor began talking).
+
+        NOTE: This callback is no longer used for UI indication because AssemblyAI's
+        SpeechStarted event is too sensitive (triggers on breathing, background noise).
+        Speech detection is now done in _on_transcript when actual text is received.
+        This method is kept for potential future use or debugging.
+        """
+        # Log for debugging only - don't update UI state
+        logger.debug("AssemblyAI SpeechStarted event (ignored for UI)")
+
+    async def _wait_for_silence(self, silence_duration: float, max_wait: float) -> bool:
+        """
+        Wait for continuous silence before interjecting.
+
+        Args:
+            silence_duration: Required silence duration in seconds
+            max_wait: Maximum time to wait in seconds
+
+        Returns:
+            True if silence was achieved, False if max_wait was reached
+        """
+        start_time = time.time()
+        logger.info(f"Waiting for {silence_duration}s of silence (max {max_wait}s)")
+
+        while not self._shutdown:
+            elapsed = time.time() - start_time
+
+            if elapsed >= max_wait:
+                logger.info(
+                    f"MAX_TURN_TIME reached ({max_wait + TURN_TIME_SECONDS}s total), "
+                    "interjecting anyway"
+                )
+                return False
+
+            if not self._is_speaking and self._silence_start_time is not None:
+                silence_elapsed = time.time() - self._silence_start_time
+                if silence_elapsed >= silence_duration:
+                    logger.info(f"WAIT_DURATION reached ({silence_duration}s of silence)")
+                    return True
+
+            await asyncio.sleep(0.1)
+
+        return False
 
     async def handle_signaling_message(self, message: str) -> None:
         """Handle incoming WebSocket signaling message."""
@@ -446,9 +523,9 @@ class VoiceSession:
         """Clean up all resources."""
         self._shutdown = True
 
-        if self._deepgram:
-            await self._deepgram.close()
-            self._deepgram = None
+        if self._transcription:
+            await self._transcription.close()
+            self._transcription = None
 
         if self._webrtc:
             await self._webrtc.close()
@@ -849,6 +926,12 @@ class VoiceSession:
         """
         Main experience loop - listen and respond periodically.
 
+        Behavior:
+        1. Listen for TURN_TIME_SECONDS
+        2. After turn time, wait for WAIT_DURATION_SECONDS of silence
+        3. If silence achieved, interject
+        4. If MAX_TURN_TIME_SECONDS reached without silence, interject anyway
+
         Args:
             goals_prompt: The prompt describing voice goals
 
@@ -858,6 +941,8 @@ class VoiceSession:
         self._goals_prompt = goals_prompt
         max_total_time = TOTAL_TIME_MINUTES * 60
         turn_time = TURN_TIME_SECONDS
+        wait_duration = WAIT_DURATION_SECONDS
+        max_turn_time = MAX_TURN_TIME_SECONDS
 
         entire_transcript = []
 
@@ -867,14 +952,48 @@ class VoiceSession:
                 break
 
             try:
-                logger.info("Starting new turn")
+                # Reset speech state at start of turn
+                self._is_speaking = False
+                self._silence_start_time = time.time()
+
+                logger.info(f"Starting new turn (listening for {turn_time}s)")
                 overheard = await self.listen(max_duration=turn_time)
                 entire_transcript.append(overheard)
 
                 if self._shutdown:
                     break
 
-                logger.info("Turn timeout, generating response")
+                # Phase 2: Wait for silence
+                logger.info(f"TURN_TIME reached ({turn_time}s), entering wait-for-silence phase")
+
+                # Calculate remaining time for wait phase
+                remaining_for_silence = max_turn_time - turn_time
+
+                if remaining_for_silence > 0:
+                    await self._wait_for_silence(
+                        silence_duration=wait_duration,
+                        max_wait=remaining_for_silence
+                    )
+
+                    # Collect any additional transcripts during wait phase
+                    additional = []
+                    while not self._speech_queue.empty():
+                        try:
+                            text = self._speech_queue.get_nowait()
+                            additional.append(text)
+                        except asyncio.QueueEmpty:
+                            break
+
+                    if additional:
+                        additional_text = " ".join(additional)
+                        entire_transcript.append(additional_text)
+                        overheard = f"{overheard} {additional_text}".strip()
+
+                if self._shutdown:
+                    break
+
+                # Phase 3: Generate and speak response
+                logger.info("Generating response")
                 response = await self.respond_to_overheard(overheard)
                 await self.speak(response)
 

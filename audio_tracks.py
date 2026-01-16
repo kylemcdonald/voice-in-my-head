@@ -248,21 +248,21 @@ class AudioInputHandler:
     Handles incoming audio from browser WebRTC connection.
 
     Routes audio to:
-    - Deepgram for transcription
+    - Transcription service (AssemblyAI) for real-time transcription
     - Recording buffer for voice cloning
     """
 
     def __init__(self):
         self._recording = False
         self._recorded_audio = bytearray()
-        self._deepgram_stream = None
+        self._transcription_stream = None
         self._track = None
         self._receive_task: Optional[asyncio.Task] = None
 
-    def set_deepgram_stream(self, stream) -> None:
-        """Set the Deepgram stream to send audio to."""
-        logger.info(f"AudioInputHandler: Deepgram stream set, is_connected={stream.is_connected if stream else False}")
-        self._deepgram_stream = stream
+    def set_transcription_stream(self, stream) -> None:
+        """Set the transcription stream to send audio to."""
+        logger.info(f"AudioInputHandler: Transcription stream set, is_connected={stream.is_connected if stream else False}")
+        self._transcription_stream = stream
 
     def start_recording(self) -> None:
         """Start recording incoming audio for voice cloning."""
@@ -305,7 +305,7 @@ class AudioInputHandler:
                     logger.info(f"AudioInputHandler: First frame received! format={frame.format.name}, samples={frame.samples}, rate={frame.sample_rate}, array_shape={arr.shape}, dtype={arr.dtype}, min={arr.min()}, max={arr.max()}")
 
                 # aiortc returns float32 audio normalized to [-1.0, 1.0] for s16 format
-                # Deepgram expects int16 PCM, so convert if needed
+                # Transcription services expect int16 PCM, so convert if needed
                 if arr.dtype == np.float32 or arr.dtype == np.float64:
                     # Convert float to int16
                     arr = (arr * 32767).astype(np.int16)
@@ -328,15 +328,15 @@ class AudioInputHandler:
                 pcm_data = arr.tobytes()
                 frame_count += 1
 
-                # Route to Deepgram
-                if self._deepgram_stream and self._deepgram_stream.is_connected:
-                    await self._deepgram_stream.send_audio(pcm_data)
+                # Route to transcription service
+                if self._transcription_stream and self._transcription_stream.is_connected:
+                    await self._transcription_stream.send_audio(pcm_data)
                     bytes_sent += len(pcm_data)
 
                 # Log progress periodically (every ~5 seconds at 50fps)
                 if frame_count % 250 == 0:
-                    dg_status = f"connected={self._deepgram_stream.is_connected}" if self._deepgram_stream else "no stream"
-                    logger.info(f"Audio receive: {frame_count} frames, {bytes_sent/1024:.1f}KB sent to Deepgram ({dg_status})")
+                    tx_status = f"connected={self._transcription_stream.is_connected}" if self._transcription_stream else "no stream"
+                    logger.info(f"Audio receive: {frame_count} frames, {bytes_sent/1024:.1f}KB sent to transcription ({tx_status})")
 
                 # Route to recording buffer
                 if self._recording:
