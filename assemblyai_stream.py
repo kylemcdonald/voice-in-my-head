@@ -291,6 +291,39 @@ class AssemblyAIStream:
         except asyncio.TimeoutError:
             return False
 
+    async def update_endpointing(
+        self,
+        end_of_turn_confidence: float,
+        min_silence_confident_ms: int,
+        max_turn_silence_ms: int,
+    ) -> None:
+        """
+        Reconnect with new endpointing parameters if they differ from current.
+
+        Args:
+            end_of_turn_confidence: Confidence threshold for end of turn (0.0-1.0)
+            min_silence_confident_ms: Min silence (ms) when confidence threshold met
+            max_turn_silence_ms: Max silence (ms) before forcing end of turn
+        """
+        # Skip if parameters haven't changed
+        if (self.end_of_turn_confidence == end_of_turn_confidence and
+            self.min_silence_confident_ms == min_silence_confident_ms and
+            self.max_turn_silence_ms == max_turn_silence_ms):
+            return
+
+        logger.info(f"Updating endpointing: confidence={end_of_turn_confidence}, "
+                    f"min_silence={min_silence_confident_ms}ms, max_silence={max_turn_silence_ms}ms")
+
+        self.end_of_turn_confidence = end_of_turn_confidence
+        self.min_silence_confident_ms = min_silence_confident_ms
+        self.max_turn_silence_ms = max_turn_silence_ms
+
+        # Close existing connection and reconnect
+        if self.is_connected:
+            await self.close()
+        await self.connect()
+        await self.wait_connected()
+
 
 async def test_assemblyai():
     """Simple test of the AssemblyAI stream."""

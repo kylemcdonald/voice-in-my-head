@@ -47,6 +47,26 @@ TURN_TIME_SECONDS = int(os.getenv("TURN_TIME_SECONDS", "50"))
 WAIT_DURATION_SECONDS = float(os.getenv("WAIT_DURATION_SECONDS", "2"))
 MAX_TURN_TIME_SECONDS = int(os.getenv("MAX_TURN_TIME_SECONDS", "90"))
 
+# Listen mode parameters for AssemblyAI turn detection
+# See: https://www.assemblyai.com/docs/universal-streaming/turn-detection
+LISTEN_PARAMS = {
+    "short": {
+        "end_of_turn_confidence": 0.4,
+        "min_silence_confident_ms": 160,
+        "max_turn_silence_ms": 400,
+    },
+    "long": {
+        "end_of_turn_confidence": 0.7,
+        "min_silence_confident_ms": 800,
+        "max_turn_silence_ms": 3600,
+    },
+    "default": {
+        "end_of_turn_confidence": 0.4,
+        "min_silence_confident_ms": 400,
+        "max_turn_silence_ms": 1280,
+    },
+}
+
 
 class AsyncSrtWriter:
     """Async version of SrtWriter for transcript logging."""
@@ -246,6 +266,7 @@ class VoiceSession:
         # Speech state tracking for wait-for-silence logic
         self._is_speaking = False
         self._silence_start_time: Optional[float] = None
+        self._utterance_ended = asyncio.Event()  # Set when AssemblyAI detects end of turn
 
         # Recording for voice cloning
         self._recording = False
@@ -381,6 +402,7 @@ class VoiceSession:
         logger.info("Visitor finished speaking")
         self._is_speaking = False
         self._silence_start_time = time.time()
+        self._utterance_ended.set()  # Signal listen() that turn ended
         # Notify client to hide speaking indicator
         await self._send_app_message({"event": "user-speaking", "speaking": False})
 
@@ -633,58 +655,59 @@ class VoiceSession:
             duration = len(audio) / (SAMPLE_RATE * SAMPLE_WIDTH)
             await asyncio.sleep(duration)
 
-    async def listen(self, max_duration: Optional[float] = None) -> str:
+    async def listen(self, mode: str = None) -> str:
         """
         Listen for user speech.
 
         Args:
-            max_duration: Maximum listen duration in seconds. If None, listens
-                         until silence is detected.
+            mode: Listen mode - "short", "long", or None for default.
+                  Controls AssemblyAI turn detection sensitivity.
+                  - short: Aggressive turn detection for brief responses
+                  - long: Conservative turn detection for longer responses
+                  - default/None: Balanced settings
 
         Returns:
             Transcribed text
         """
-        if max_duration is None:
-            await self.play_sound("listen-begin")
+        # Get parameters for mode (default if not specified or invalid)
+        params = LISTEN_PARAMS.get(mode, LISTEN_PARAMS["default"])
 
-        start_time = time.time()
-        transcripts = []
+        # Update AssemblyAI endpointing parameters
+        if self._transcription:
+            await self._transcription.update_endpointing(**params)
 
-        # Clear queue
+        # Clear utterance ended event and speech queue
+        self._utterance_ended.clear()
         while not self._speech_queue.empty():
             try:
                 self._speech_queue.get_nowait()
             except asyncio.QueueEmpty:
                 break
 
+        await self.play_sound("listen-begin")
+
+        transcripts = []
+
         while not self._shutdown:
-            if max_duration is not None:
-                # Fixed duration listening
-                if time.time() - start_time > max_duration:
-                    break
-            else:
-                # Listen until silence
-                if transcripts:
-                    # Check for silence based on last utterance
-                    time_since_speech = time.time() - (self._last_utterance_time or start_time)
-                    # End of sentence gets shorter wait
-                    if transcripts[-1][-1] in ".?!":
-                        if time_since_speech > 2.0:
-                            break
-                    else:
-                        if time_since_speech > 4.0:
-                            break
+            # Check if AssemblyAI signaled end of turn and we have transcripts
+            if self._utterance_ended.is_set() and transcripts:
+                # Drain any remaining transcripts from queue
+                while not self._speech_queue.empty():
+                    try:
+                        text = self._speech_queue.get_nowait()
+                        transcripts.append(text)
+                    except asyncio.QueueEmpty:
+                        break
+                break
 
             # Try to get transcript
             try:
                 text = await asyncio.wait_for(self._speech_queue.get(), timeout=0.1)
                 transcripts.append(text)
-                self._last_utterance_time = time.time()
             except asyncio.TimeoutError:
                 pass
 
-        if max_duration is None:
-            await self.play_sound("listen-end")
+        await self.play_sound("listen-end")
 
         result = " ".join(transcripts)
         logger.info(f"Listened: {result[:100]}...")
