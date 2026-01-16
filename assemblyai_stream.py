@@ -84,6 +84,7 @@ class AssemblyAIStream:
         # At 48kHz, 16-bit mono: 50ms = 4800 bytes, we'll target ~100ms = 9600 bytes
         self._audio_buffer = bytearray()
         self._min_chunk_bytes = 4800  # 50ms at 48kHz, 16-bit mono
+        self._bytes_actually_sent = 0  # Track actual bytes sent over websocket
 
     @property
     def is_connected(self) -> bool:
@@ -149,7 +150,9 @@ class AssemblyAIStream:
         # Send when we have enough data (50ms minimum)
         if len(self._audio_buffer) >= self._min_chunk_bytes:
             try:
-                await self._ws.send(bytes(self._audio_buffer))
+                chunk = bytes(self._audio_buffer)
+                await self._ws.send(chunk)
+                self._bytes_actually_sent += len(chunk)
                 self._audio_buffer.clear()
             except websockets.exceptions.ConnectionClosed:
                 logger.warning("Connection closed while sending audio")

@@ -335,8 +335,11 @@ class AudioInputHandler:
 
                 # Log progress periodically (every ~5 seconds at 50fps)
                 if frame_count % 250 == 0:
-                    tx_status = f"connected={self._transcription_stream.is_connected}" if self._transcription_stream else "no stream"
-                    logger.info(f"Audio receive: {frame_count} frames, {bytes_sent/1024:.1f}KB sent to transcription ({tx_status})")
+                    if self._transcription_stream:
+                        actual_kb = self._transcription_stream._bytes_actually_sent / 1024
+                        logger.info(f"Audio receive: {frame_count} frames, {actual_kb:.1f}KB actually sent to AssemblyAI (connected={self._transcription_stream.is_connected})")
+                    else:
+                        logger.info(f"Audio receive: {frame_count} frames, no transcription stream")
 
                 # Route to recording buffer
                 if self._recording:

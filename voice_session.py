@@ -967,8 +967,9 @@ class VoiceSession:
         Behavior:
         1. Listen for TURN_TIME_SECONDS
         2. After turn time, wait for WAIT_DURATION_SECONDS of silence
-        3. If silence achieved, interject
-        4. If MAX_TURN_TIME_SECONDS reached without silence, interject anyway
+        3. Generate ChatGPT response
+        4. Wait for silence again before speaking (to avoid interrupting)
+        5. Speak the response
 
         Args:
             goals_prompt: The prompt describing voice goals
@@ -983,6 +984,11 @@ class VoiceSession:
         max_turn_time = MAX_TURN_TIME_SECONDS
 
         entire_transcript = []
+
+        # Use "short" mode turn detection for responsive silence detection
+        params = LISTEN_PARAMS["short"]
+        if self._transcription:
+            await self._transcription.update_endpointing(**params)
 
         while not self._shutdown:
             elapsed = time.time() - self._start_time
@@ -1001,7 +1007,7 @@ class VoiceSession:
                 if self._shutdown:
                     break
 
-                # Phase 2: Wait for silence
+                # Phase 2: Wait for silence before generating response
                 logger.info(f"TURN_TIME reached ({turn_time}s), entering wait-for-silence phase")
 
                 # Calculate remaining time for wait phase
@@ -1030,9 +1036,38 @@ class VoiceSession:
                 if self._shutdown:
                     break
 
-                # Phase 3: Generate and speak response
-                logger.info("Generating response")
+                # Phase 3: Generate response (ChatGPT call)
+                logger.info("Generating response via ChatGPT")
                 response = await self.respond_to_overheard(overheard)
+
+                if self._shutdown:
+                    break
+
+                # Phase 4: Wait for silence again before speaking
+                # This avoids interrupting if user started talking during ChatGPT call
+                if self._is_speaking:
+                    logger.info("User started talking during ChatGPT call, waiting for silence before speaking")
+                    # Collect any new transcripts while waiting
+                    while self._is_speaking and not self._shutdown:
+                        await asyncio.sleep(0.1)
+                    # Wait for the required silence duration
+                    await self._wait_for_silence(
+                        silence_duration=wait_duration,
+                        max_wait=30.0  # Max 30s wait, then speak anyway
+                    )
+                    # Collect additional transcripts
+                    while not self._speech_queue.empty():
+                        try:
+                            text = self._speech_queue.get_nowait()
+                            entire_transcript.append(text)
+                        except asyncio.QueueEmpty:
+                            break
+
+                if self._shutdown:
+                    break
+
+                # Phase 5: Speak response
+                logger.info("Speaking response")
                 await self.speak(response)
 
             except Exception as e:
