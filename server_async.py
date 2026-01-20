@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)
 # Active sessions
 sessions: Dict[str, "VoiceSession"] = {}
 
+# Pending session configs (created in spin_up_session, used in websocket_handler)
+pending_configs: Dict[str, Dict] = {}
+
 
 async def index(request: web.Request) -> web.Response:
     """Serve the index page."""
@@ -103,9 +106,12 @@ async def spin_up_session(request: web.Request) -> web.Response:
     # Get configuration from query params
     config = {
         "language": query.get("l", "en"),
-        "voice": query.get("v", "Mimi"),
-        "script": query.get("s", "script.csv"),
+        "voice": query.get("v", "Matilda"),
+        "script": query.get("s", "script.csv")
     }
+
+    # Store config for later retrieval by websocket_handler
+    pending_configs[session_id] = config
 
     logger.info(f"Creating session {session_id} with config: {config}")
 
@@ -134,8 +140,11 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
     # Import here to avoid circular imports
     from voice_session import VoiceSession
 
-    # Create session
-    session = VoiceSession(session_id)
+    # Get config from pending_configs
+    config = pending_configs.pop(session_id, {})
+
+    # Create session with config
+    session = VoiceSession(session_id, config)
     sessions[session_id] = session
 
     # Set up message sending

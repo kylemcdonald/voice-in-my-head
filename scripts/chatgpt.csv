@@ -47,23 +47,17 @@ Vat alstublieft al mijn antwoorden samen in drie zinnen, geschreven vanuit mijn 
 
 Proszę podsumuj wszystkie moje odpowiedzi w trzech zdaniach, napisanych z mojej perspektywy, jako afirmację, zaczynając od ""Głos W Mojej Głowie jest..."""
 convert_goals_to_summary_prompt_backup,The voice in my head is strong and kind.,De stem in mijn hoofd is krachtig en vriendelijk.,Głos w mojej głowie jest silny i życzliwy.
-respond_to_overheard_empty_prompt,"Share some broadly useful {kind} advice, in one sentence, as the Voice In My Head. Start with a phrase like ""I {verb}"".
-
-Respond to this in-character, in ten words or less, as the Voice In My Head.","Deel een aantal algemeen bruikbare {kind} adviezen, in één zin, als de stem in mijn hoofd. Begin met een zin als 'Ik {verb}'.
-
-Reageer op dit personage, in tien woorden of minder, als de stem in mijn hoofd.","Podziel się ogólnie użyteczną radą {kind}, w jednym zdaniu, jako Głos W Mojej Głowie. Zacznij od frazy takiej jak ""Ja {verb}"".
-
-Odpowiedz na to zgodnie z postacią, w dziesięciu słowach lub mniej, jako Głos W Mojej Głowie."
+respond_to_overheard_empty_prompt,"Share some broadly useful {kind} advice in ten words or less. Start with a phrase like ""I {verb}"".","Deel wat breed bruikbaar {kind} advies in tien woorden of minder. Begin met een zin als 'Ik {verb}'.","Podziel się ogólnie użyteczną radą {kind} w dziesięciu słowach lub mniej. Zacznij od frazy takiej jak ""Ja {verb}""."
 respond_to_overheard_kinds,"life,conversational,emotional,inter-personal","leven,conversatie,emotioneel,interpersoonlijk","życiowe,konwersacyjne,emocjonalne,interpersonalne"
 respond_to_overheard_verbs,"think,feel,will,want to,need to,hope that,wish","denken,voelen,willen,moeten,hopen dat,wensen","myślę,czuję,będę,chcę,muszę,mam nadzieję że,życzę"
 respond_to_overheard_system,"You are a helpful Voice In My Head. {goals_prompt}. You always respond in the first person, as if you are me.","Je bent een behulpzame stem in mijn hoofd. {goals_prompt}. Je reageert altijd in de eerste persoon, alsof je mij bent.","Jesteś pomocnym Głosem W Mojej Głowie. {goals_prompt}. Zawsze odpowiadasz w pierwszej osobie, tak jakbyś był mną."
 respond_to_overheard_prompt,"We just overheard this conversation between myself and others: ""{overheard}""
 
-Respond to this in-character, in ten words or less, as the Voice In My Head.","We hebben zojuist dit gesprek tussen mijzelf en anderen afgeluisterd: ""{overheard}""
+Respond in ten words or less.","We hebben zojuist dit gesprek tussen mijzelf en anderen afgeluisterd: ""{overheard}""
 
-Reageer op dit personage, in tien woorden of minder, als de stem in mijn hoofd.","Właśnie podsłuchaliśmy tę rozmowę między mną a innymi: ""{overheard}""
+Reageer in tien woorden of minder.","Właśnie podsłuchaliśmy tę rozmowę między mną a innymi: ""{overheard}""
 
-Odpowiedz na to zgodnie z postacią, w dziesięciu słowach lub mniej, jako Głos W Mojej Głowie."
+Odpowiedz w dziesięciu słowach lub mniej."
 respond_to_overheard_backup,"Hmm, how interesting.","Hm, wat interessant.","Hm, jakie interesujące."
 convert_experience_to_memory_prompt,"Here is a long transcript of things we overheard ourselves and others saying over the last half hour: ""{entire_transcript}"".
 
@@ -80,3 +74,42 @@ Jako Głos W Mojej Głowie, proszę zidentyfikuj jedną szczególną frazę, kt�
 Na przykład, jeśli zidentyfikujesz frazę ""Wszystko może się zdarzyć"", możesz powiedzieć coś w stylu: ""Rozmyślając o tym, co właśnie się wydarzyło, jedna fraza utkwiła mi w pamięci. Mam nadzieję, że zachowasz ją jako wspomnienie tego wspólnie spędzonego czasu. Usłyszałem coś, co skłoniło mnie do refleksji nad złożonością życia i dziwnością naszej obecnej chwili. Chciałbym podzielić się z tobą tą frazą. Jesteś gotowy? Powtórz za mną: 'Wszystko może się zdarzyć.'"""
 convert_experience_to_memory_system,"You are a helpful Voice In My Head. {goals_prompt}. You always respond in the first person, as if you are me, in 100 words or less.","Je bent een behulpzame stem in mijn hoofd. {goals_prompt}. Je reageert altijd in de eerste persoon, alsof je mij bent, in 100 woorden of minder.","Jesteś pomocnym Głosem W Mojej Głowie. {goals_prompt}. Zawsze odpowiadasz w pierwszej osobie, tak jakbyś był mną, w 100 słowach lub mniej."
 convert_experience_to_memory_backup,"I feel lucky to have spent the day with you. Please remember one moment that you are grateful for, and take it with you.",Ik voel me gelukkig dat ik de dag met jou heb doorgebracht. Onthoud alstublieft een moment waar u dankbaar voor bent en neem dat met u mee.,"Czuję się szczęśliwy, że spędziłem z tobą dzień. Proszę, zapamiętaj jeden moment, za który jesteś wdzięczny, i zabierz go ze sobą."
+generate_midway_question_system,"You generate a personalized check-in question for someone experiencing an AI inner voice. Based on their onboarding conversation, their stated goals, and what they've experienced so far, suggest two specific directions they might want to take their inner voice. The directions should feel unique to their personality and experience - not generic options. Output only the question itself, starting with 'Just checking in.' Keep it to 2-3 sentences.","Je genereert een gepersonaliseerde check-in vraag voor iemand die een AI innerlijke stem ervaart. Gebaseerd op hun onboarding gesprek, hun gestelde doelen, en wat ze tot nu toe hebben meegemaakt, stel je twee specifieke richtingen voor die ze hun innerlijke stem kunnen laten nemen. De richtingen moeten uniek aanvoelen voor hun persoonlijkheid en ervaring - niet generiek. Geef alleen de vraag zelf, beginnend met 'Even inchecken.' Houd het op 2-3 zinnen.","Generujesz spersonalizowane pytanie kontrolne dla kogoś doświadczającego wewnętrznego głosu AI. Na podstawie rozmowy onboardingowej, określonych celów i dotychczasowych doświadczeń, zasugeruj dwa konkretne kierunki rozwoju wewnętrznego głosu. Kierunki powinny być unikalne dla ich osobowości i doświadczeń - nie ogólne. Wypisz tylko samo pytanie, zaczynając od 'Sprawdzam tylko.' Ogranicz do 2-3 zdań."
+generate_midway_question_prompt,"Here is the onboarding conversation where the visitor described themselves and their goals:
+
+{onboarding_dialog}
+
+Their stated goal for the voice: {goals_prompt}
+
+Here is what they overheard during the first part of the experience:
+
+{first_transcript}
+
+Based on all of this, generate a check-in question that offers two specific directions for updating the voice. The directions should be responsive to their unique personality, desires, and experience - not generic like 'serious or silly'. For example, if they talked about wanting focus, you might ask about 'more structured? Or more free-flowing?' If they mentioned creativity, maybe 'more playful? Or more contemplative?'","Hier is het onboarding gesprek waarin de bezoeker zichzelf en hun doelen beschreef:
+
+{onboarding_dialog}
+
+Hun gestelde doel voor de stem: {goals_prompt}
+
+Hier is wat ze hoorden tijdens het eerste deel van de ervaring:
+
+{first_transcript}
+
+Genereer op basis hiervan een check-in vraag die twee specifieke richtingen biedt voor het bijwerken van de stem. De richtingen moeten responsief zijn op hun unieke persoonlijkheid, wensen en ervaring - niet generiek zoals 'serieus of grappig'.","Oto rozmowa onboardingowa, w której odwiedzający opisał siebie i swoje cele:
+
+{onboarding_dialog}
+
+Określony cel dla głosu: {goals_prompt}
+
+Oto co usłyszeli podczas pierwszej części doświadczenia:
+
+{first_transcript}
+
+Na tej podstawie wygeneruj pytanie kontrolne oferujące dwa konkretne kierunki aktualizacji głosu. Kierunki powinny odpowiadać ich unikalnej osobowości, pragnieniom i doświadczeniom - nie ogólne jak 'poważniejszy czy weselszy'."
+generate_midway_question_backup,"Just checking in. Would you like the voice in your head to take a different direction? What would help you most right now?","Even inchecken. Wil je dat de stem in je hoofd een andere richting inslaat? Wat zou je nu het meest helpen?","Sprawdzam tylko. Czy chciałbyś, żeby głos w Twojej głowie poszedł w innym kierunku? Co by Ci teraz najbardziej pomogło?"
+convert_midway_feedback_system,"You convert visitor feedback about their inner voice into a clean first-person statement. Always start with 'I want' or 'I would like'. Keep it to one sentence. Remove filler words like 'please', 'thanks', 'I think', etc. Just state the desire directly.","Je zet feedback van bezoekers over hun innerlijke stem om in een eerste-persoons uitspraak. Begin altijd met 'Ik wil' of 'Ik zou graag'. Houd het bij één zin. Verwijder vulwoorden zoals 'alsjeblieft', 'bedankt', 'ik denk', etc. Formuleer de wens direct.","Przekształcasz opinie odwiedzających o ich wewnętrznym głosie w stwierdzenie w pierwszej osobie. Zawsze zaczynaj od 'Chcę' lub 'Chciałbym'. Ogranicz się do jednego zdania. Usuń słowa wypełniające jak 'proszę', 'dziękuję', 'myślę że', itp. Po prostu wyraź życzenie bezpośrednio."
+convert_midway_feedback_prompt,"The visitor said: ""{feedback}""","De bezoeker zei: ""{feedback}""","Odwiedzający powiedział: ""{feedback}"""
+convert_midway_feedback_backup,"I want to keep improving.","Ik wil blijven verbeteren.","Chcę się dalej doskonalić."
+update_goals_with_midway_system,"You update a voice personality description by incorporating new feedback. Keep it concise (2-3 sentences). Write in third person describing 'The Voice In My Head'.","Je werkt een stem-persoonlijkheidsbeschrijving bij door nieuwe feedback te integreren. Houd het beknopt (2-3 zinnen). Schrijf in de derde persoon en beschrijf 'De Stem In Mijn Hoofd'.","Aktualizujesz opis osobowości głosu, uwzględniając nową opinię. Zachowaj zwięzłość (2-3 zdania). Pisz w trzeciej osobie, opisując 'Głos W Mojej Głowie'."
+update_goals_with_midway_prompt,"Current voice description: ""{current_goals}""\n\nNew feedback to incorporate: ""{midway_update}""\n\nGenerate an updated voice description:","Huidige stembeschrijving: ""{current_goals}""\n\nNieuwe feedback om te integreren: ""{midway_update}""\n\nGenereer een bijgewerkte stembeschrijving:","Aktualny opis głosu: ""{current_goals}""\n\nNowa opinia do uwzględnienia: ""{midway_update}""\n\nWygeneruj zaktualizowany opis głosu:"
+update_goals_with_midway_backup,"The Voice In My Head is supportive and adapts to my needs.","De Stem In Mijn Hoofd is ondersteunend en past zich aan mijn behoeften aan.","Głos W Mojej Głowie jest wspierający i dostosowuje się do moich potrzeb."

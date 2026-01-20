@@ -50,6 +50,29 @@
       const audio = new Audio('sound/jingle.wav');
       audio.play();
     }
+
+    function testMidway() {
+      fetch('/spin-up-session?test=1&l=en', {
+        method: 'POST',
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const url = `run?session_id=${data.session_id}`;
+          console.log(`redirecting to ${url}`)
+          window.location.href = url;
+        })
+        .catch((e) => {
+          console.error('failed to spin up test session', e);
+        });
+    }
+
+    // Show test button on dev server
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.location.hostname.includes('dev') || window.location.search.includes('test=1')) {
+        const testButton = document.getElementById('test-midway-button');
+        if (testButton) testButton.classList.remove('hidden');
+      }
+    });
   </script>
 </head>
 

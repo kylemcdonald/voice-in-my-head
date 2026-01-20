@@ -254,7 +254,7 @@ class VoiceSession:
         self._start_time: Optional[float] = None
 
         # Voice settings
-        self._default_voice = self.config.get("voice", "Mimi")
+        self._default_voice = self.config.get("voice", "Matilda")
         self._voice_list: List[Any] = []
         self._name_to_voice: Dict[str, str] = {}
         self._cloned_voice_id: Optional[str] = None
@@ -286,6 +286,10 @@ class VoiceSession:
 
         # Goals prompt for experience loop
         self._goals_prompt = ""
+
+        # Experience loop tracking
+        self._onboarding_end_time: Optional[float] = None
+        self._entire_transcript: List[str] = []
 
         # ChatGPT localized strings
         self._strings: Dict[str, str] = {}
@@ -498,8 +502,10 @@ class VoiceSession:
         # Initialize SRT writer
         self._srt_writer = AsyncSrtWriter(self.session_id)
 
-        # Load and run script
+        # Handle test mode
         script_name = self.config.get("script", "script.csv")
+
+        # Load and run script
         script_path = f"scripts/{script_name}"
 
         self._script_reader = AsyncScriptReader(script_path, self._language, self)
@@ -535,6 +541,13 @@ class VoiceSession:
                     self._strings[key] = value
         except Exception as e:
             logger.error(f"Failed to load ChatGPT strings: {e}")
+            raise
+
+    def _get_string(self, key: str) -> str:
+        """Get a localized string, raising an error if not found."""
+        if key not in self._strings:
+            raise KeyError(f"Missing required string key in chatgpt.csv: {key}")
+        return self._strings[key]
 
     async def end(self) -> None:
         """End the voice session."""
@@ -895,39 +908,39 @@ class VoiceSession:
     async def convert_response_to_name(self, response: str) -> str:
         """Extract name from response."""
         if not response:
-            return self._strings.get("convert_response_to_name_backup", "friend")
+            return self._get_string("convert_response_to_name_backup")
 
         return await self._chatgpt(
-            self._strings.get("convert_response_to_name_prompt", "").format(response=response),
-            system=self._strings.get("convert_response_to_name_system"),
-            backup=self._strings.get("convert_response_to_name_backup", "friend"),
+            self._get_string("convert_response_to_name_prompt").format(response=response),
+            system=self._get_string("convert_response_to_name_system"),
+            backup=self._get_string("convert_response_to_name_backup"),
         )
 
     async def convert_existing_to_summary(self, messages: List[Dict[str, str]]) -> str:
         """Summarize existing voice description."""
         dialog = self._build_dialog(messages)
         return await self._chatgpt(
-            self._strings.get("convert_existing_to_summary_prompt", "").format(dialog=dialog),
-            system=self._strings.get("convert_existing_to_summary_system"),
-            backup=self._strings.get("convert_existing_to_summary_backup", ""),
+            self._get_string("convert_existing_to_summary_prompt").format(dialog=dialog),
+            system=self._get_string("convert_existing_to_summary_system"),
+            backup=self._get_string("convert_existing_to_summary_backup"),
         )
 
     async def convert_goals_to_summary(self, messages: List[Dict[str, str]]) -> str:
         """Summarize user goals."""
         dialog = self._build_dialog(messages)
         return await self._chatgpt(
-            self._strings.get("convert_goals_to_summary_prompt", "").format(dialog=dialog),
-            system=self._strings.get("convert_goals_to_summary_system"),
-            backup=self._strings.get("convert_goals_to_summary_backup", ""),
+            self._get_string("convert_goals_to_summary_prompt").format(dialog=dialog),
+            system=self._get_string("convert_goals_to_summary_system"),
+            backup=self._get_string("convert_goals_to_summary_backup"),
         )
 
     async def convert_goals_to_summary_prompt(self, messages: List[Dict[str, str]]) -> str:
         """Convert goals to a prompt for the experience loop."""
         dialog = self._build_dialog(messages)
         return await self._chatgpt(
-            self._strings.get("convert_goals_to_summary_prompt_prompt", "").format(dialog=dialog),
-            system=self._strings.get("convert_goals_to_summary_prompt_system"),
-            backup=self._strings.get("convert_goals_to_summary_prompt_backup", ""),
+            self._get_string("convert_goals_to_summary_prompt_prompt").format(dialog=dialog),
+            system=self._get_string("convert_goals_to_summary_prompt_system"),
+            backup=self._get_string("convert_goals_to_summary_prompt_backup"),
         )
 
     async def respond_to_overheard(self, overheard: str) -> str:
@@ -935,32 +948,32 @@ class VoiceSession:
         import random
 
         if not overheard:
-            kinds = self._strings.get("respond_to_overheard_kinds", "question,observation").split(",")
-            verbs = self._strings.get("respond_to_overheard_verbs", "ask,say").split(",")
+            kinds = self._get_string("respond_to_overheard_kinds").split(",")
+            verbs = self._get_string("respond_to_overheard_verbs").split(",")
             kind = random.choice(kinds)
             verb = random.choice(verbs)
 
             return await self._chatgpt(
-                self._strings.get("respond_to_overheard_empty_prompt", "").format(kind=kind, verb=verb),
-                system=self._strings.get("respond_to_overheard_system", "").format(goals_prompt=self._goals_prompt),
-                backup=self._strings.get("respond_to_overheard_backup", ""),
+                self._get_string("respond_to_overheard_empty_prompt").format(kind=kind, verb=verb),
+                system=self._get_string("respond_to_overheard_system").format(goals_prompt=self._goals_prompt),
+                backup=self._get_string("respond_to_overheard_backup"),
             )
 
         return await self._chatgpt(
-            self._strings.get("respond_to_overheard_prompt", "").format(overheard=overheard),
-            system=self._strings.get("respond_to_overheard_system", "").format(goals_prompt=self._goals_prompt),
-            backup=self._strings.get("respond_to_overheard_backup", ""),
+            self._get_string("respond_to_overheard_prompt").format(overheard=overheard),
+            system=self._get_string("respond_to_overheard_system").format(goals_prompt=self._goals_prompt),
+            backup=self._get_string("respond_to_overheard_backup"),
         )
 
     async def convert_experience_to_memory(self, transcript: str) -> str:
         """Convert experience transcript to memory."""
         return await self._chatgpt(
-            self._strings.get("convert_experience_to_memory_prompt", "").format(entire_transcript=transcript),
-            system=self._strings.get("convert_experience_to_memory_system", "").format(goals_prompt=self._goals_prompt),
-            backup=self._strings.get("convert_experience_to_memory_backup", ""),
+            self._get_string("convert_experience_to_memory_prompt").format(entire_transcript=transcript),
+            system=self._get_string("convert_experience_to_memory_system").format(goals_prompt=self._goals_prompt),
+            backup=self._get_string("convert_experience_to_memory_backup"),
         )
 
-    async def experience_loop(self, goals_prompt: str) -> str:
+    async def experience_loop(self, goals_prompt: str, run_until: str = "end") -> str:
         """
         Main experience loop - listen and respond periodically.
 
@@ -973,17 +986,29 @@ class VoiceSession:
 
         Args:
             goals_prompt: The prompt describing voice goals
+            run_until: "midway" to stop at midpoint, "end" to run until TOTAL_TIME_MINUTES
 
         Returns:
             Complete transcript of the experience
         """
         self._goals_prompt = goals_prompt
-        max_total_time = TOTAL_TIME_MINUTES * 60
         turn_time = TURN_TIME_SECONDS
         wait_duration = WAIT_DURATION_SECONDS
         max_turn_time = MAX_TURN_TIME_SECONDS
 
-        entire_transcript = []
+        # Record onboarding end time on first call
+        if self._onboarding_end_time is None:
+            self._onboarding_end_time = time.time()
+
+        # Calculate stop time based on run_until parameter
+        if run_until == "midway":
+            onboarding_duration = self._onboarding_end_time - self._start_time
+            midway_offset = (TOTAL_TIME_MINUTES * 60 - onboarding_duration) / 2
+            stop_time = self._onboarding_end_time + midway_offset
+            logger.info(f"MIDWAY MODE: Will stop at {stop_time - self._start_time:.0f}s from start")
+        else:
+            stop_time = self._start_time + TOTAL_TIME_MINUTES * 60
+            logger.info(f"END MODE: Will stop at {stop_time - self._start_time:.0f}s from start")
 
         # Use "short" mode turn detection for responsive silence detection
         params = LISTEN_PARAMS["short"]
@@ -991,8 +1016,8 @@ class VoiceSession:
             await self._transcription.update_endpointing(**params)
 
         while not self._shutdown:
-            elapsed = time.time() - self._start_time
-            if elapsed > max_total_time:
+            if time.time() > stop_time:
+                logger.info(f"Reached stop time for {run_until} mode")
                 break
 
             try:
@@ -1002,7 +1027,7 @@ class VoiceSession:
 
                 logger.info(f"Starting new turn (listening for {turn_time}s)")
                 overheard = await self.listen(max_duration=turn_time)
-                entire_transcript.append(overheard)
+                self._entire_transcript.append(overheard)
 
                 if self._shutdown:
                     break
@@ -1030,7 +1055,7 @@ class VoiceSession:
 
                     if additional:
                         additional_text = " ".join(additional)
-                        entire_transcript.append(additional_text)
+                        self._entire_transcript.append(additional_text)
                         overheard = f"{overheard} {additional_text}".strip()
 
                 if self._shutdown:
@@ -1059,7 +1084,7 @@ class VoiceSession:
                     while not self._speech_queue.empty():
                         try:
                             text = self._speech_queue.get_nowait()
-                            entire_transcript.append(text)
+                            self._entire_transcript.append(text)
                         except asyncio.QueueEmpty:
                             break
 
@@ -1073,4 +1098,93 @@ class VoiceSession:
             except Exception as e:
                 logger.error(f"Experience loop error: {e}")
 
-        return " ".join(entire_transcript)
+        return " ".join(self._entire_transcript)
+
+    async def experience_loop_first(self, goals_prompt: str) -> str:
+        """Run experience loop until midway point."""
+        logger.info("=== EXPERIENCE LOOP FIRST HALF ===")
+        return await self.experience_loop(goals_prompt, run_until="midway")
+
+    async def experience_loop_second(self, goals_prompt: str) -> str:
+        """Run experience loop from midway to end."""
+        logger.info("=== EXPERIENCE LOOP SECOND HALF ===")
+        return await self.experience_loop(goals_prompt, run_until="end")
+
+    async def generate_midway_question(self, first_transcript: str) -> str:
+        """Generate a personalized midway check-in question based on the entire experience."""
+        logger.info("=== GENERATING MIDWAY QUESTION ===")
+
+        # Build context from onboarding conversation
+        onboarding_dialog = self._build_dialog(self._messages)
+
+        system = self._get_string("generate_midway_question_system")
+        prompt = self._get_string("generate_midway_question_prompt").format(
+            onboarding_dialog=onboarding_dialog,
+            first_transcript=first_transcript,
+            goals_prompt=self._goals_prompt
+        )
+
+        try:
+            response = await self._openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150
+            )
+            result = response.choices[0].message.content.strip()
+            logger.info(f"Generated midway question: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"Failed to generate midway question: {e}")
+            return self._get_string("generate_midway_question_backup")
+
+    async def convert_midway_feedback(self, feedback: str) -> str:
+        """Convert visitor feedback to first-person statement like 'I want to be more silly.'"""
+        logger.info(f"=== CONVERTING MIDWAY FEEDBACK: {feedback} ===")
+
+        system = self._get_string("convert_midway_feedback_system")
+        prompt = self._get_string("convert_midway_feedback_prompt").format(feedback=feedback)
+
+        try:
+            response = await self._openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=100
+            )
+            result = response.choices[0].message.content.strip()
+            logger.info(f"Converted to: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"Failed to convert midway feedback: {e}")
+            return self._get_string("convert_midway_feedback_backup")
+
+    async def update_goals_with_midway(self, midway_update: str) -> str:
+        """Update the goals_prompt by incorporating the midway feedback."""
+        logger.info(f"=== UPDATING GOALS WITH: {midway_update} ===")
+        logger.info(f"Current goals: {self._goals_prompt}")
+
+        system = self._get_string("update_goals_with_midway_system")
+        prompt = self._get_string("update_goals_with_midway_prompt").format(
+            current_goals=self._goals_prompt, midway_update=midway_update)
+
+        try:
+            response = await self._openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150
+            )
+            result = response.choices[0].message.content.strip()
+            logger.info(f"Updated goals to: {result}")
+            self._goals_prompt = result  # Also update internal state
+            return result
+        except Exception as e:
+            logger.error(f"Failed to update goals: {e}")
+            return self._get_string("update_goals_with_midway_backup")

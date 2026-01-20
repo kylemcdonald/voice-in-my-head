@@ -31,11 +31,22 @@
       return 'Are you sure you want to exit?';
     });
 
+    function testMidway() {
+      // Redirect to spin-up with test mode
+      window.location.href = '/spin-up-session?test=1&l=en';
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
       // Show debug button on dev server
       if (window.location.hostname.includes('dev')) {
         const debugButton = document.getElementById('debug-button');
         debugButton.classList.remove('hidden');
+      }
+
+      // Show test button on dev server or when test=1 is in URL
+      if (window.location.hostname.includes('dev') || window.location.search.includes('test=1')) {
+        const testButton = document.getElementById('test-button');
+        if (testButton) testButton.classList.remove('hidden');
       }
 
       const params = new URLSearchParams(window.location.search);
@@ -287,6 +298,11 @@
       class="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl text-xl font-mono italic"
       onclick="toggleDebug()">
       Toggle Debug
+    </button>
+    <button id="test-button"
+      class="hidden bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-xl text-xl font-mono italic"
+      onclick="testMidway()">
+      Test Midway
     </button>
   </div>
 
