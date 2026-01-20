@@ -294,6 +294,8 @@ class AudioInputHandler:
         logger.info("AudioInputHandler: Receive loop started, waiting for first frame...")
         frame_count = 0
         bytes_sent = 0
+        last_log_bytes = 0
+        last_log_time = None
         try:
             while True:
                 frame = await self._track.recv()
@@ -335,11 +337,20 @@ class AudioInputHandler:
 
                 # Log progress periodically (every ~5 seconds at 50fps)
                 if frame_count % 250 == 0:
+                    now = time.time()
                     if self._transcription_stream:
-                        actual_kb = self._transcription_stream._bytes_actually_sent / 1024
-                        logger.info(f"Audio receive: {frame_count} frames, {actual_kb:.1f}KB actually sent to AssemblyAI (connected={self._transcription_stream.is_connected})")
+                        current_bytes = self._transcription_stream._bytes_actually_sent
+                        if last_log_time is not None:
+                            elapsed = now - last_log_time
+                            delta_bytes = current_bytes - last_log_bytes
+                            rate_kbps = (delta_bytes / 1024) / elapsed if elapsed > 0 else 0
+                            logger.info(f"Audio receive: {frame_count} frames, {rate_kbps:.1f}KB/s to AssemblyAI (connected={self._transcription_stream.is_connected})")
+                        else:
+                            logger.info(f"Audio receive: {frame_count} frames (connected={self._transcription_stream.is_connected})")
+                        last_log_bytes = current_bytes
                     else:
                         logger.info(f"Audio receive: {frame_count} frames, no transcription stream")
+                    last_log_time = now
 
                 # Route to recording buffer
                 if self._recording:

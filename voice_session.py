@@ -284,6 +284,9 @@ class VoiceSession:
         # Script reader
         self._script_reader: Optional[AsyncScriptReader] = None
 
+        # Track last spoken text for repeat requests
+        self._last_spoken_text: Optional[str] = None
+
         # Goals prompt for experience loop
         self._goals_prompt = ""
 
@@ -579,6 +582,9 @@ class VoiceSession:
         """Speak text using ElevenLabs TTS."""
         text = text.replace("'", "'")  # Fix apostrophe issues
 
+        # Track last spoken text for repeat requests
+        self._last_spoken_text = text
+
         logger.info(f"Speaking: {text[:50]}...")
 
         # Send to client chat
@@ -739,6 +745,15 @@ class VoiceSession:
 
         result = " ".join(transcripts)
         logger.info(f"Listened: {result[:100]}...")
+
+        # Check for repeat requests (only for scripted listen calls, not experience_loop)
+        if max_duration is None and result and self._last_spoken_text:
+            if await self._check_repeat_request(result):
+                logger.info("Repeat request detected, re-speaking last message")
+                await self.speak(self._last_spoken_text)
+                # Listen again for the actual response
+                return await self.listen(mode=mode, max_duration=max_duration)
+
         return result
 
     async def wait(self, seconds: float) -> None:
@@ -904,6 +919,20 @@ class VoiceSession:
             role = mapping.get(m["role"], m["role"])
             lines.append(f"{role}: {m['content']}")
         return "\n".join(lines)
+
+    async def _check_repeat_request(self, transcript: str) -> bool:
+        """Check if the user is asking to repeat the last spoken message."""
+        if not transcript or not self._last_spoken_text:
+            return False
+
+        result = await self._chatgpt(
+            self._get_string("check_repeat_request_prompt").format(transcript=transcript),
+            system=self._get_string("check_repeat_request_system"),
+            backup="no",
+        )
+        # Check if response starts with or contains "yes" (handles "Yes", "yes.", etc.)
+        result_lower = result.strip().lower()
+        return result_lower.startswith("yes") or result_lower == "y"
 
     async def convert_response_to_name(self, response: str) -> str:
         """Extract name from response."""
