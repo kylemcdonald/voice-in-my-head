@@ -578,12 +578,18 @@ class VoiceSession:
         self._default_voice = voice
         logger.info(f"Voice set to: {voice}")
 
-    async def speak(self, text: str, use_cache: bool = True) -> None:
+    async def speak(
+        self,
+        text: str,
+        use_cache: bool = True,
+        remember_last_spoken: bool = True,
+    ) -> None:
         """Speak text using ElevenLabs TTS."""
         text = text.replace("'", "'")  # Fix apostrophe issues
 
-        # Track last spoken text for repeat requests
-        self._last_spoken_text = text
+        # Track last spoken text for repeat requests.
+        if remember_last_spoken:
+            self._last_spoken_text = text
 
         logger.info(f"Speaking: {text[:50]}...")
 
@@ -746,15 +752,11 @@ class VoiceSession:
         result = " ".join(transcripts)
         logger.info(f"Listened: {result[:100]}...")
 
-        # Check for repeat requests (only for scripted listen calls, not experience_loop)
-        if max_duration is None and result and self._last_spoken_text:
-            if await self._check_repeat_request(result):
-                logger.info("Repeat request detected, re-speaking last message")
-                await self.speak(self._last_spoken_text)
-                # Listen again for the actual response
-                return await self.listen(mode=mode, max_duration=max_duration)
-
-        return result
+        return await self._handle_listen_followup(
+            result,
+            mode=mode,
+            max_duration=max_duration,
+        )
 
     async def wait(self, seconds: float) -> None:
         """Wait for specified duration."""
@@ -887,6 +889,7 @@ class VoiceSession:
         prompt: str,
         system: Optional[str] = None,
         backup: Optional[str] = None,
+        max_tokens: int = 1024,
     ) -> str:
         """Call ChatGPT with prompt and optional system message."""
         messages = []
@@ -898,7 +901,7 @@ class VoiceSession:
             response = await self._openai.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
-                max_tokens=1024,
+                max_tokens=max_tokens,
             )
             return response.choices[0].message.content
         except Exception as e:
@@ -920,19 +923,54 @@ class VoiceSession:
             lines.append(f"{role}: {m['content']}")
         return "\n".join(lines)
 
-    async def _check_repeat_request(self, transcript: str) -> bool:
-        """Check if the user is asking to repeat the last spoken message."""
-        if not transcript or not self._last_spoken_text:
-            return False
+    async def _classify_listen_response(self, transcript: str) -> str:
+        """
+        Classify a scripted listen response as a repeat request, incomplete
+        answer, or normal answer.
+        """
+        if not transcript:
+            return "answer"
 
         result = await self._chatgpt(
             self._get_string("check_repeat_request_prompt").format(transcript=transcript),
             system=self._get_string("check_repeat_request_system"),
-            backup="no",
+            backup=self._get_string("check_repeat_request_backup"),
+            max_tokens=4,
         )
-        # Check if response starts with or contains "yes" (handles "Yes", "yes.", etc.)
+
         result_lower = result.strip().lower()
-        return result_lower.startswith("yes") or result_lower == "y"
+        for label in ("repeat", "continue", "answer"):
+            if result_lower.startswith(label):
+                return label
+
+        return self._get_string("check_repeat_request_backup").strip().lower()
+
+    async def _handle_listen_followup(
+        self,
+        transcript: str,
+        mode: Optional[str] = None,
+        max_duration: Optional[float] = None,
+    ) -> str:
+        """Handle scripted listen edge cases before returning the transcript."""
+        if max_duration is not None or not transcript:
+            return transcript
+
+        classification = await self._classify_listen_response(transcript)
+        if classification == "repeat" and self._last_spoken_text:
+            logger.info("Repeat request detected, re-speaking last message")
+            await self.speak(self._last_spoken_text)
+            return await self.listen(mode=mode, max_duration=max_duration)
+
+        if classification == "continue":
+            logger.info("Incomplete response detected, asking visitor to continue")
+            await self.speak(
+                self._get_string("continue_incomplete_response"),
+                remember_last_spoken=False,
+            )
+            continuation = await self.listen(mode=mode, max_duration=max_duration)
+            return " ".join(part for part in [transcript, continuation] if part).strip()
+
+        return transcript
 
     async def convert_response_to_name(self, response: str) -> str:
         """Extract name from response."""
