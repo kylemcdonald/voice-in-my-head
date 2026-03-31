@@ -83,7 +83,7 @@ async def test_classify_short_listen_response_uses_short_prompt(monkeypatch):
         "check_repeat_request_prompt": "long-prompt {question} / {transcript}",
         "check_repeat_request_backup": "answer",
         "check_repeat_request_short_system": "short-system",
-        "check_repeat_request_short_prompt": "short-prompt {question} / {transcript}",
+        "check_repeat_request_short_prompt": "short-prompt {transcript}",
         "check_repeat_request_short_backup": "answer",
     })
     session._last_spoken_text = "What do you mean?"
@@ -99,7 +99,7 @@ async def test_classify_short_listen_response_uses_short_prompt(monkeypatch):
     result = await session._classify_listen_response("Hmm...", mode="short")
 
     assert result == "answer"
-    assert calls == [("short-prompt What do you mean? / Hmm...", "short-system", "answer", 4)]
+    assert calls == [("short-prompt Hmm...", "short-system", "answer", 4)]
 
 
 @pytest.mark.asyncio
@@ -110,7 +110,7 @@ async def test_classify_long_listen_response_includes_question(monkeypatch):
         "check_repeat_request_prompt": "long-prompt {question} / {transcript}",
         "check_repeat_request_backup": "answer",
         "check_repeat_request_short_system": "short-system",
-        "check_repeat_request_short_prompt": "short-prompt {question} / {transcript}",
+        "check_repeat_request_short_prompt": "short-prompt {transcript}",
         "check_repeat_request_short_backup": "answer",
     })
 

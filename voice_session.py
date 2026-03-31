@@ -15,6 +15,7 @@ import io
 import json
 import logging
 import os
+import re
 import time
 import wave
 from pathlib import Path
@@ -1050,11 +1051,68 @@ class VoiceSession:
 
     async def convert_experience_to_memory(self, transcript: str) -> str:
         """Convert experience transcript to memory."""
-        return await self._chatgpt(
+        response = await self._chatgpt(
             self._get_string("convert_experience_to_memory_prompt").format(entire_transcript=transcript),
             system=self._get_string("convert_experience_to_memory_system").format(goals_prompt=self._goals_prompt),
             backup=self._get_string("convert_experience_to_memory_backup"),
         )
+        if self._memory_response_is_valid(response, transcript):
+            return response
+
+        logger.warning("Invalid memory response generated, falling back to backup")
+        return self._get_string("convert_experience_to_memory_backup")
+
+    @staticmethod
+    def _normalize_memory_match_text(text: str) -> str:
+        """Normalize text for phrase matching."""
+        if not text:
+            return ""
+
+        text = (
+            text.replace("“", '"')
+            .replace("”", '"')
+            .replace("‘", "'")
+            .replace("’", "'")
+        )
+        text = re.sub(r"\s+", " ", text).strip().lower()
+        return text
+
+    @classmethod
+    def _extract_memory_phrases(cls, response: str) -> List[str]:
+        """Extract quoted phrases from the generated memory response."""
+        phrases = []
+        for phrase in re.findall(r'["“](.*?)["”]', response or ""):
+            normalized = cls._normalize_memory_match_text(phrase).strip(" .,!?:;-'\"")
+            if normalized:
+                phrases.append(normalized)
+        return phrases
+
+    @classmethod
+    def _memory_response_is_valid(cls, response: str, transcript: str) -> bool:
+        """Validate that the memory response references a real transcript phrase."""
+        if not response:
+            return False
+
+        normalized_response = cls._normalize_memory_match_text(response)
+        if any(token in normalized_response for token in (
+            "[insert phrase here]",
+            "insert phrase here",
+            "{insert phrase here}",
+            "[phrase]",
+            "{phrase}",
+            "placeholder",
+        )):
+            return False
+
+        if "[" in response or "]" in response or "{" in response or "}" in response:
+            return False
+
+        phrases = cls._extract_memory_phrases(response)
+        if not phrases:
+            return False
+
+        normalized_transcript = cls._normalize_memory_match_text(transcript)
+        return any(phrase in normalized_transcript for phrase in phrases)
 
     async def experience_loop(self, goals_prompt: str, run_until: str = "end") -> str:
         """
