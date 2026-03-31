@@ -1097,25 +1097,24 @@ class VoiceSession:
                 if self._shutdown:
                     break
 
-                # Phase 4: Wait for silence again before speaking
-                # This avoids interrupting if user started talking during ChatGPT call
-                if self._is_speaking:
-                    logger.info("User started talking during ChatGPT call, waiting for silence before speaking")
-                    # Collect any new transcripts while waiting
-                    while self._is_speaking and not self._shutdown:
-                        await asyncio.sleep(0.1)
-                    # Wait for the required silence duration
-                    await self._wait_for_silence(
-                        silence_duration=wait_duration,
-                        max_wait=30.0  # Max 30s wait, then speak anyway
-                    )
-                    # Collect additional transcripts
-                    while not self._speech_queue.empty():
-                        try:
-                            text = self._speech_queue.get_nowait()
-                            self._entire_transcript.append(text)
-                        except asyncio.QueueEmpty:
-                            break
+                # Phase 4: Wait for silence again before speaking.
+                # Start the timeout immediately so continuous speech still
+                # forces an interruption after the configured max wait.
+                logger.info("Waiting for silence before speaking response")
+                silence_achieved = await self._wait_for_silence(
+                    silence_duration=wait_duration,
+                    max_wait=30.0  # Max 30s wait, then speak anyway
+                )
+                if not silence_achieved:
+                    logger.info("No silence detected before speak timeout, interrupting anyway")
+
+                # Collect any additional transcripts that arrived while waiting.
+                while not self._speech_queue.empty():
+                    try:
+                        text = self._speech_queue.get_nowait()
+                        self._entire_transcript.append(text)
+                    except asyncio.QueueEmpty:
+                        break
 
                 if self._shutdown:
                     break
