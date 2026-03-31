@@ -923,7 +923,7 @@ class VoiceSession:
             lines.append(f"{role}: {m['content']}")
         return "\n".join(lines)
 
-    async def _classify_listen_response(self, transcript: str) -> str:
+    async def _classify_listen_response(self, transcript: str, mode: Optional[str] = None) -> str:
         """
         Classify a scripted listen response as a repeat request, incomplete
         answer, or normal answer.
@@ -931,19 +931,25 @@ class VoiceSession:
         if not transcript:
             return "answer"
 
+        allow_continue = mode == "long"
+        prompt_key = "check_repeat_request_prompt" if allow_continue else "check_repeat_request_short_prompt"
+        system_key = "check_repeat_request_system" if allow_continue else "check_repeat_request_short_system"
+        backup_key = "check_repeat_request_backup" if allow_continue else "check_repeat_request_short_backup"
+        allowed_labels = ("repeat", "continue", "answer") if allow_continue else ("repeat", "answer")
+
         result = await self._chatgpt(
-            self._get_string("check_repeat_request_prompt").format(transcript=transcript),
-            system=self._get_string("check_repeat_request_system"),
-            backup=self._get_string("check_repeat_request_backup"),
+            self._get_string(prompt_key).format(transcript=transcript),
+            system=self._get_string(system_key),
+            backup=self._get_string(backup_key),
             max_tokens=4,
         )
 
         result_lower = result.strip().lower()
-        for label in ("repeat", "continue", "answer"):
+        for label in allowed_labels:
             if result_lower.startswith(label):
                 return label
 
-        return self._get_string("check_repeat_request_backup").strip().lower()
+        return self._get_string(backup_key).strip().lower()
 
     async def _handle_listen_followup(
         self,
@@ -955,7 +961,7 @@ class VoiceSession:
         if max_duration is not None or not transcript:
             return transcript
 
-        classification = await self._classify_listen_response(transcript)
+        classification = await self._classify_listen_response(transcript, mode=mode)
         if classification == "repeat" and self._last_spoken_text:
             logger.info("Repeat request detected, re-speaking last message")
             await self.speak(self._last_spoken_text)

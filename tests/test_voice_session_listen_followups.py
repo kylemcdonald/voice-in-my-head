@@ -11,12 +11,13 @@ async def test_handle_listen_followup_prompts_for_incomplete_response(monkeypatc
 
     speak_calls = []
 
-    async def fake_classify(transcript):
+    async def fake_classify(transcript, mode=None):
         assert transcript == "Hmm, let me think about that."
+        assert mode == "long"
         return "continue"
 
     async def fake_listen(mode=None, max_duration=None):
-        assert mode == "short"
+        assert mode == "long"
         assert max_duration is None
         return "I want it to be calmer."
 
@@ -29,7 +30,7 @@ async def test_handle_listen_followup_prompts_for_incomplete_response(monkeypatc
 
     result = await session._handle_listen_followup(
         "Hmm, let me think about that.",
-        mode="short",
+        mode="long",
         max_duration=None,
     )
 
@@ -45,12 +46,13 @@ async def test_handle_listen_followup_repeats_last_question(monkeypatch):
 
     speak_calls = []
 
-    async def fake_classify(transcript):
+    async def fake_classify(transcript, mode=None):
         assert transcript == "Sorry?"
+        assert mode == "short"
         return "repeat"
 
     async def fake_listen(mode=None, max_duration=None):
-        assert mode == "default"
+        assert mode == "short"
         assert max_duration is None
         return "Here is my real answer."
 
@@ -63,9 +65,35 @@ async def test_handle_listen_followup_repeats_last_question(monkeypatch):
 
     result = await session._handle_listen_followup(
         "Sorry?",
-        mode="default",
+        mode="short",
         max_duration=None,
     )
 
     assert result == "Here is my real answer."
     assert speak_calls == [("Could you tell me more?", True, True)]
+
+
+@pytest.mark.asyncio
+async def test_classify_short_listen_response_uses_short_prompt(monkeypatch):
+    session = voice_session.VoiceSession("test-session")
+    session._strings.update({
+        "check_repeat_request_system": "long-system",
+        "check_repeat_request_prompt": "long-prompt {transcript}",
+        "check_repeat_request_backup": "answer",
+        "check_repeat_request_short_system": "short-system",
+        "check_repeat_request_short_prompt": "short-prompt {transcript}",
+        "check_repeat_request_short_backup": "answer",
+    })
+
+    calls = []
+
+    async def fake_chatgpt(prompt, system=None, backup=None, max_tokens=1024):
+        calls.append((prompt, system, backup, max_tokens))
+        return "continue"
+
+    monkeypatch.setattr(session, "_chatgpt", fake_chatgpt)
+
+    result = await session._classify_listen_response("Hmm...", mode="short")
+
+    assert result == "answer"
+    assert calls == [("short-prompt Hmm...", "short-system", "answer", 4)]
