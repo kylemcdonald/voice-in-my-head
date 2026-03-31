@@ -539,10 +539,17 @@ class VoiceSession:
                 for row in reader:
                     key = row.get("Key", "")
                     value = row.get(self._language, row.get("en", ""))
-                    self._strings[key] = value
+                    self._strings[key] = self._normalize_chatgpt_string(value)
         except Exception as e:
             logger.error(f"Failed to load ChatGPT strings: {e}")
             raise
+
+    @staticmethod
+    def _normalize_chatgpt_string(value: Optional[str]) -> Optional[str]:
+        """Convert accidentally escaped newlines into real newlines."""
+        if value is None:
+            return None
+        return value.replace("\\n", "\n")
 
     def _get_string(self, key: str) -> str:
         """Get a localized string, raising an error if not found."""
