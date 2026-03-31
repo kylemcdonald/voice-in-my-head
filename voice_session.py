@@ -444,10 +444,7 @@ class VoiceSession:
             elapsed = time.time() - start_time
 
             if elapsed >= max_wait:
-                logger.info(
-                    f"MAX_TURN_TIME reached ({max_wait + TURN_TIME_SECONDS}s total), "
-                    "interjecting anyway"
-                )
+                logger.info(f"Silence wait timed out after {max_wait:.1f}s, interjecting anyway")
                 return False
 
             if not self._is_speaking and self._silence_start_time is not None:
@@ -1122,8 +1119,9 @@ class VoiceSession:
         1. Listen for TURN_TIME_SECONDS
         2. After turn time, wait for WAIT_DURATION_SECONDS of silence
         3. Generate ChatGPT response
-        4. Wait for silence again before speaking (to avoid interrupting)
-        5. Speak the response
+        4. Wait for silence again before speaking, but only within the same
+           MAX_TURN_TIME_SECONDS deadline
+        5. Speak the response once silence is found or the deadline is reached
 
         Args:
             goals_prompt: The prompt describing voice goals
@@ -1166,6 +1164,8 @@ class VoiceSession:
                 self._is_speaking = False
                 self._silence_start_time = time.time()
 
+                turn_started_at = time.time()
+
                 logger.info(f"Starting new turn (listening for {turn_time}s)")
                 overheard = await self.listen(max_duration=turn_time)
                 self._entire_transcript.append(overheard)
@@ -1174,16 +1174,26 @@ class VoiceSession:
                     break
 
                 # Phase 2: Wait for silence before generating response
-                logger.info(f"TURN_TIME reached ({turn_time}s), entering wait-for-silence phase")
-
-                # Calculate remaining time for wait phase
-                remaining_for_silence = max_turn_time - turn_time
+                forced_interrupt_deadline = turn_started_at + max_turn_time
+                remaining_for_silence = max(
+                    0.0, forced_interrupt_deadline - time.time()
+                )
+                logger.info(
+                    f"TURN_TIME reached ({turn_time}s), entering wait-for-silence "
+                    f"phase with {remaining_for_silence:.1f}s remaining before forced "
+                    "interrupt"
+                )
 
                 if remaining_for_silence > 0:
-                    await self._wait_for_silence(
+                    silence_achieved = await self._wait_for_silence(
                         silence_duration=wait_duration,
                         max_wait=remaining_for_silence
                     )
+                    if not silence_achieved:
+                        logger.info(
+                            f"MAX_TURN_TIME reached ({max_turn_time}s total), "
+                            "interjecting anyway"
+                        )
 
                     # Collect any additional transcripts during wait phase
                     additional = []
@@ -1210,15 +1220,30 @@ class VoiceSession:
                     break
 
                 # Phase 4: Wait for silence again before speaking.
-                # Start the timeout immediately so continuous speech still
-                # forces an interruption after the configured max wait.
-                logger.info("Waiting for silence before speaking response")
-                silence_achieved = await self._wait_for_silence(
-                    silence_duration=wait_duration,
-                    max_wait=30.0  # Max 30s wait, then speak anyway
+                # Reuse the same forced interrupt deadline so the visitor hears
+                # the response no later than MAX_TURN_TIME_SECONDS after the turn starts.
+                remaining_before_speaking = max(
+                    0.0, forced_interrupt_deadline - time.time()
                 )
-                if not silence_achieved:
-                    logger.info("No silence detected before speak timeout, interrupting anyway")
+                if remaining_before_speaking > 0:
+                    logger.info(
+                        "Waiting for silence before speaking response "
+                        f"(up to {remaining_before_speaking:.1f}s remaining)"
+                    )
+                    silence_achieved = await self._wait_for_silence(
+                        silence_duration=wait_duration,
+                        max_wait=remaining_before_speaking
+                    )
+                    if not silence_achieved:
+                        logger.info(
+                            "No silence detected before forced interrupt deadline, "
+                            "interrupting anyway"
+                        )
+                else:
+                    logger.info(
+                        "Forced interrupt deadline reached while generating response, "
+                        "speaking immediately"
+                    )
 
                 # Collect any additional transcripts that arrived while waiting.
                 while not self._speech_queue.empty():
