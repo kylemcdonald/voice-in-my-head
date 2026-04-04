@@ -22,6 +22,9 @@
     let pc = null;
     let ws = null;
     let localStream = null;
+    let remoteAudio = null;
+    let remoteStream = null;
+    let pendingClientLogs = [];
     let started = false;
 
     // Warn before leaving the page
@@ -72,18 +75,202 @@
       console.error(message);
     }
 
+    function logClient(message, extra = {}) {
+      const payload = {
+        event: 'client-log',
+        message,
+        extra,
+      };
+
+      console.log('[client-log]', payload);
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'app-message',
+          data: payload,
+        }));
+      } else {
+        pendingClientLogs.push(payload);
+      }
+    }
+
+    function flushClientLogs() {
+      if (!ws || ws.readyState !== WebSocket.OPEN || pendingClientLogs.length === 0) {
+        return;
+      }
+
+      for (const payload of pendingClientLogs) {
+        ws.send(JSON.stringify({
+          type: 'app-message',
+          data: payload,
+        }));
+      }
+
+      pendingClientLogs = [];
+    }
+
+    function ensureRemoteAudioElement() {
+      if (remoteAudio) {
+        return remoteAudio;
+      }
+
+      remoteAudio = document.createElement('audio');
+      remoteAudio.id = 'remote-audio';
+      remoteAudio.autoplay = true;
+      remoteAudio.playsInline = true;
+      remoteAudio.setAttribute('playsinline', '');
+      remoteAudio.style.display = 'none';
+      document.body.appendChild(remoteAudio);
+      return remoteAudio;
+    }
+
+    async function tryStartRemoteAudio(reason) {
+      const audio = ensureRemoteAudioElement();
+
+      if (!audio.srcObject) {
+        logClient('remote-audio-play-skipped', { reason, hasSrcObject: false });
+        return;
+      }
+
+      try {
+        await audio.play();
+        logClient('remote-audio-play-ok', {
+          reason,
+          paused: audio.paused,
+          currentTime: audio.currentTime,
+        });
+      } catch (err) {
+        logClient('remote-audio-play-failed', {
+          reason,
+          name: err.name,
+          message: err.message,
+        });
+      }
+    }
+
+    async function logAvailableDevices() {
+      if (!navigator.mediaDevices?.enumerateDevices) {
+        logClient('enumerate-devices-unsupported');
+        return [];
+      }
+
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const simplifiedDevices = devices.map(device => ({
+          kind: device.kind,
+          label: device.label,
+          deviceId: device.deviceId,
+          groupId: device.groupId,
+        }));
+        logClient('media-devices', {
+          devices: simplifiedDevices,
+        });
+        return devices;
+      } catch (err) {
+        logClient('enumerate-devices-failed', {
+          name: err.name,
+          message: err.message,
+        });
+        return [];
+      }
+    }
+
+    function isIPhone() {
+      return /iPhone/i.test(navigator.userAgent);
+    }
+
+    function scoreAudioInput(device) {
+      const label = (device.label || '').toLowerCase();
+      let score = 0;
+
+      if (label.includes('airpods')) score += 100;
+      if (label.includes('bluetooth')) score += 75;
+      if (label.includes('beats')) score += 60;
+      if (label.includes('headset') || label.includes('headphone')) score += 50;
+      if (label.includes('iphone')) score -= 100;
+      if (label.includes('default')) score -= 10;
+
+      return score;
+    }
+
+    async function requestMicrophoneStream(audioConstraints = true) {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: audioConstraints,
+      });
+
+      const [audioTrack] = stream.getAudioTracks();
+      logClient('microphone-access-granted', {
+        label: audioTrack?.label,
+        settings: audioTrack?.getSettings?.(),
+      });
+      return stream;
+    }
+
+    async function selectPreferredIPhoneAudioInput() {
+      if (!isIPhone()) {
+        return;
+      }
+
+      const devices = await logAvailableDevices();
+      const audioInputs = devices
+        .filter(device => device.kind === 'audioinput')
+        .sort((a, b) => scoreAudioInput(b) - scoreAudioInput(a));
+
+      if (audioInputs.length === 0) {
+        logClient('iphone-audio-input-selection-skipped', {
+          reason: 'no-audioinput-devices',
+        });
+        return;
+      }
+
+      const preferredDevice = audioInputs[0];
+      logClient('iphone-audio-input-candidate', {
+        label: preferredDevice.label,
+        deviceId: preferredDevice.deviceId,
+        score: scoreAudioInput(preferredDevice),
+      });
+
+      try {
+        const replacementStream = await requestMicrophoneStream({
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          deviceId: { exact: preferredDevice.deviceId },
+        });
+
+        const replacementTrack = replacementStream.getAudioTracks()[0];
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop());
+        }
+        localStream = replacementStream;
+
+        logClient('iphone-audio-input-selected', {
+          label: replacementTrack?.label,
+          settings: replacementTrack?.getSettings?.(),
+        });
+      } catch (err) {
+        logClient('iphone-audio-input-selection-failed', {
+          requestedLabel: preferredDevice.label,
+          requestedDeviceId: preferredDevice.deviceId,
+          name: err.name,
+          message: err.message,
+        });
+      }
+    }
+
     async function initWebRTC(sessionId) {
+      ensureRemoteAudioElement();
+
       // Request microphone permission first
       console.log('Requesting microphone...');
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          }
+        localStream = await requestMicrophoneStream({
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
         });
         console.log('Got microphone access');
+        await selectPreferredIPhoneAudioInput();
       } catch (err) {
         console.error('Microphone access denied:', err);
         showError('Microphone access required');
@@ -100,6 +287,10 @@
 
       ws.onopen = () => {
         console.log('WebSocket connected');
+        logClient('websocket-open', {
+          userAgent: navigator.userAgent,
+        });
+        flushClientLogs();
       };
 
       ws.onerror = (err) => {
@@ -148,12 +339,15 @@
       pc.ontrack = (event) => {
         console.log('Got remote track:', event.track.kind);
         if (event.track.kind === 'audio') {
-          // Create audio element to play remote audio
-          const audio = document.createElement('audio');
-          audio.srcObject = event.streams[0];
-          audio.autoplay = true;
-          document.body.appendChild(audio);
-          console.log('Audio playback started');
+          const audio = ensureRemoteAudioElement();
+          remoteStream = event.streams[0];
+          audio.srcObject = remoteStream;
+          logClient('remote-audio-track-received', {
+            trackLabel: event.track.label,
+            streamId: remoteStream.id,
+            audioPaused: audio.paused,
+          });
+          tryStartRemoteAudio('track-received');
         }
       };
 
@@ -235,6 +429,10 @@
     }
 
     function start() {
+      logClient('start-tapped');
+      logAvailableDevices();
+      tryStartRemoteAudio('start-tap');
+
       // Send start message
       ws.send(JSON.stringify({
         type: 'app-message',

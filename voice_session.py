@@ -472,6 +472,17 @@ class VoiceSession:
 
     async def _handle_app_message(self, data: Dict) -> None:
         """Handle app messages from client."""
+        if data.get("event") == "client-log":
+            message = data.get("message", "")
+            extra = data.get("extra", {})
+            logger.info(
+                "Client log for session %s: %s %s",
+                self.session_id,
+                message,
+                extra,
+            )
+            return
+
         msg = data.get("message", "")
 
         if msg == "start":
