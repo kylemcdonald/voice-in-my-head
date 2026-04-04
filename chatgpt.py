@@ -14,7 +14,7 @@ def build_dialog(messages, mapping={"user": "Patient", "assistant": "Therapist"}
     return "\n".join(dialog)
 
 class ChatGPT:
-    def __init__(self, model="gpt-5.2", language="en"):
+    def __init__(self, model="gpt-5.4", language="en"):
         self.openai = openai.OpenAI()
         self.model = model
         self.language = language
