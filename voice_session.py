@@ -68,6 +68,34 @@ LISTEN_PARAMS = {
     },
 }
 
+NAME_PATTERNS = [
+    re.compile(r"\bmy name is (?P<name>[a-z][a-z' -]{0,39})\b", re.IGNORECASE),
+    re.compile(r"\bi am (?P<name>[a-z][a-z' -]{0,39})\b", re.IGNORECASE),
+    re.compile(r"\bi'm (?P<name>[a-z][a-z' -]{0,39})\b", re.IGNORECASE),
+    re.compile(r"\bthis is (?P<name>[a-z][a-z' -]{0,39})\b", re.IGNORECASE),
+]
+
+NAME_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "friend",
+    "hello",
+    "hi",
+    "i",
+    "im",
+    "it's",
+    "its",
+    "me",
+    "my",
+    "name",
+    "no",
+    "okay",
+    "ok",
+    "the",
+    "yes",
+}
+
 
 class AsyncSrtWriter:
     """Async version of SrtWriter for transcript logging."""
@@ -1009,11 +1037,68 @@ class VoiceSession:
         if not response:
             return self._get_string("convert_response_to_name_backup")
 
-        return await self._chatgpt(
+        deterministic_name = self._extract_name_deterministically(response)
+        if deterministic_name:
+            logger.info("Deterministic name extraction succeeded: %s", deterministic_name)
+            return deterministic_name
+
+        llm_name = await self._chatgpt(
             self._get_string("convert_response_to_name_prompt").format(response=response),
             system=self._get_string("convert_response_to_name_system"),
             backup=self._get_string("convert_response_to_name_backup"),
         )
+        normalized_name = self._normalize_name_candidate(llm_name)
+        if normalized_name:
+            return normalized_name
+
+        logger.warning(
+            "LLM name extraction returned invalid result %r for response %r, using backup",
+            llm_name,
+            response,
+        )
+        return self._get_string("convert_response_to_name_backup")
+
+    def _extract_name_deterministically(self, response: str) -> Optional[str]:
+        """Extract obvious self-introductions without relying on the model."""
+        cleaned = " ".join(response.strip().split())
+
+        for pattern in NAME_PATTERNS:
+            match = pattern.search(cleaned)
+            if not match:
+                continue
+
+            normalized = self._normalize_name_candidate(match.group("name"))
+            if normalized:
+                return normalized
+
+        return None
+
+    def _normalize_name_candidate(self, value: str) -> Optional[str]:
+        """Normalize a candidate name and reject obvious non-names."""
+        if not value:
+            return None
+
+        cleaned = value.strip()
+        cleaned = re.sub(r"^[^a-zA-Z]+|[^a-zA-Z' -]+$", "", cleaned)
+        cleaned = re.sub(r"\s+", " ", cleaned)
+        cleaned = cleaned.strip(" -'")
+        if not cleaned:
+            return None
+
+        words = cleaned.split()
+        if len(words) > 3:
+            return None
+
+        normalized_words = []
+        for word in words:
+            lowered = word.lower()
+            if lowered in NAME_STOPWORDS:
+                return None
+            if len(word) == 1 and lowered != "q":
+                return None
+            normalized_words.append(word[0].upper() + word[1:].lower())
+
+        return " ".join(normalized_words)
 
     async def convert_existing_to_summary(self, messages: List[Dict[str, str]]) -> str:
         """Summarize existing voice description."""
