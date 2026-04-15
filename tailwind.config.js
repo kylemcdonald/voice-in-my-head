@@ -9,10 +9,9 @@ module.exports = {
     },
     extend: {
       colors: {
-        'vimh': '#8CB9F0'
+        'vimh': '#FFD364'
       }
     },
   },
   plugins: [],
 }
-
