@@ -41,7 +41,7 @@ sudo apt install -y caddy
 
 ```sh
 cd /opt
-sudo git clone -b nodaily https://github.com/kylemcdonald/voice-in-my-head.git vimh
+sudo git clone https://github.com/kylemcdonald/voice-in-my-head.git vimh
 cd vimh
 sudo uv sync
 ```

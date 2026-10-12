@@ -188,7 +188,7 @@ apt-get update && apt-get install -y caddy
 ### Clone and Setup
 ```sh
 cd /opt
-git clone -b nodaily https://github.com/kylemcdonald/voice-in-my-head.git vimh
+git clone https://github.com/kylemcdonald/voice-in-my-head.git vimh
 cd vimh
 uv sync
 ```
