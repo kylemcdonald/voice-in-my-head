@@ -8,7 +8,7 @@ Voice In My Head (VIMH) is a real-time voice interaction system using:
 - **aiortc** for native WebRTC audio streaming (replaced Daily.co)
 - **AssemblyAI** for real-time speech-to-text (with configurable endpointing)
 - **ElevenLabs** for text-to-speech with voice cloning
-- **OpenAI GPT-5.2** for conversational AI
+- **Claude or OpenAI** for conversational AI via `llm.py` (provider picked from the model name in `LLM_MODEL` / `LLM_FAST_MODEL`)
 
 Users connect via browser WebRTC to interact with an AI voice assistant that can clone their voice and provide personalized responses.
 
@@ -131,6 +131,14 @@ The frontend (`static/run.html`) shows a 🗣️ emoji overlay when the visitor 
 // Server sends: {type: "app-message", data: {event: "user-speaking", speaking: true/false}}
 ```
 
+### Voice Clone Lifecycle
+Each session's ElevenLabs voice clone is deleted when the session ends (`VoiceSession.delete_cloned_voice`):
+- when the script finishes,
+- when the WebSocket closes (tab closed, cancelled, navigated away), via `close()`,
+- when WebRTC reports `failed` (phone lost network or the page was suspended; ~30s of failed ICE consent checks), which closes the WebSocket.
+
+The script runs as its own task so the WebSocket keeps being read during a session. As a backstop for server crashes and restarts, `server_async.py` runs `delete_stale_voice_clones` at startup and every 30 minutes; it deletes clones whose description starts with "vimh" and that are more than 2 hours old.
+
 ### Script Format
 Scripts in `scripts/*.csv` with columns: `function`, `output`, `input`, and optional language columns.
 - Functions map to methods on `VoiceSession` class
@@ -141,12 +149,18 @@ Scripts in `scripts/*.csv` with columns: `function`, `output`, `input`, and opti
 ```
 ELEVENLABS_API_KEY=...
 OPENAI_API_KEY=...
+CLAUDE_API_KEY=...
+LLM_MODEL=claude-sonnet-5-5       # Interjections, summaries, closing memory
+LLM_REASONING=off                # off, low, medium or high
+LLM_FAST_MODEL=claude-haiku-5-5  # Interview calls the visitor waits on
+LLM_FAST_REASONING=off
 ASSEMBLYAI_API_KEY=...
 TURN_TIME_SECONDS=50           # Initial listening duration before looking for silence
 WAIT_DURATION_SECONDS=2        # Silence duration needed before interjecting
 MAX_TURN_TIME_SECONDS=90       # Max wait time, interject anyway after this
 TOTAL_TIME_MINUTES=25          # Total session duration
 LOCATION=...
+WEBRTC_SERVER_STUN=            # Server STUN URLs (comma-separated); leave empty on a server with a public IP
 
 # AssemblyAI endpointing (optional, less-sensitive defaults)
 END_OF_TURN_CONFIDENCE=0.5     # Confidence threshold (0.0-1.0)
@@ -228,8 +242,13 @@ systemctl restart caddy
 ```
 
 ### Recommended Server Specs
-- **4 simultaneous sessions**: 2 vCPU, 4GB RAM
-- **8 simultaneous sessions**: 4 vCPU, 8GB RAM
+Measured with 4 simultaneous sessions on a DigitalOcean Regular 2 vCPU / 2 GB droplet (2.0 GHz):
+- CPU: ~70% of one core on average (p95 ~100%, peaks ~130% during the interview), all threads combined. The asyncio main thread, which runs everything for all sessions, used ~45% of a core (max ~62%).
+- RAM: ~310 MB for the app (~255 MB baseline + ~15 MB per session).
+
+The server is one Python process, so per-core speed limits how many sessions it can hold, more than core count does.
+- **4 simultaneous sessions**: 2 vCPU, 2 GB RAM
+- **8 simultaneous sessions**: not measured; the main thread would be near a full core. Use a faster CPU (Premium or CPU-Optimized) and load test first.
 
 ## Deprecated Files
 

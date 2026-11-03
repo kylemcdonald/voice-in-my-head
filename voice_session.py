@@ -5,11 +5,12 @@ Manages a complete voice interaction session:
 - WebRTC audio connection
 - AssemblyAI transcription (with configurable endpointing)
 - ElevenLabs TTS
-- OpenAI ChatGPT conversation
+- Language model calls via llm.py (Claude or OpenAI)
 - Script execution
 """
 
 import asyncio
+import contextlib
 import hashlib
 import io
 import json
@@ -24,9 +25,9 @@ from typing import Callable, Optional, Awaitable, List, Dict, Any
 import aiofiles
 import numpy as np
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 from elevenlabs import AsyncElevenLabs, VoiceSettings
 
+import llm
 from webrtc_handler import WebRTCSession
 from assemblyai_stream import AssemblyAIStream, TranscriptMessage
 from audio_tracks import (
@@ -47,6 +48,11 @@ TOTAL_TIME_MINUTES = int(os.getenv("TOTAL_TIME_MINUTES", "25"))
 TURN_TIME_SECONDS = int(os.getenv("TURN_TIME_SECONDS", "50"))
 WAIT_DURATION_SECONDS = float(os.getenv("WAIT_DURATION_SECONDS", "2"))
 MAX_TURN_TIME_SECONDS = int(os.getenv("MAX_TURN_TIME_SECONDS", "90"))
+
+# Voice clones made by sessions carry this description, so leftovers can be found later.
+CLONE_DESCRIPTION = "vimh cloned voice"
+# A session clone this old must have been orphaned (e.g. by a server crash or restart).
+STALE_CLONE_SECONDS = 2 * 60 * 60
 
 # Listen mode parameters for AssemblyAI turn detection
 # See: https://www.assemblyai.com/docs/universal-streaming/turn-detection
@@ -226,9 +232,11 @@ class AsyncScriptReader:
         # Execute
         logger.info(f"Script: {raw_function}({raw_input[:50] if raw_input else ''})")
 
+        # Pass the input whenever the row has one, even if a variable resolved to ""
+        # (e.g. nothing was overheard), so the function still gets its argument.
         if is_async:
             # Run as background task
-            if input_val:
+            if raw_input:
                 task = asyncio.create_task(method(input_val))
             else:
                 task = asyncio.create_task(method())
@@ -236,7 +244,7 @@ class AsyncScriptReader:
                 self.memory[output] = task
         else:
             # Run synchronously
-            if input_val:
+            if raw_input:
                 result = await method(input_val) if asyncio.iscoroutinefunction(method) else method(input_val)
             else:
                 result = await method() if asyncio.iscoroutinefunction(method) else method()
@@ -267,7 +275,8 @@ class VoiceSession:
         self.config = config or {}
 
         # API clients
-        self._openai: Optional[AsyncOpenAI] = None
+        self._llm: Optional[llm.LLM] = None
+        self._llm_fast: Optional[llm.LLM] = None
         self._elevenlabs: Optional[AsyncElevenLabs] = None
 
         # WebRTC and signaling
@@ -281,6 +290,8 @@ class VoiceSession:
         self._started = False
         self._shutdown = False
         self._start_time: Optional[float] = None
+        self._script_task: Optional[asyncio.Task] = None
+        self._close_callback: Optional[Callable[[], Awaitable[None]]] = None
 
         # Voice settings
         self._default_voice = self.config.get("voice", "Matilda")
@@ -301,6 +312,7 @@ class VoiceSession:
         self._recording = False
         self._recorded_audio = bytearray()
         self._cloning_task: Optional[asyncio.Task] = None
+        self._clone_cleanup_lock = asyncio.Lock()
 
         # Conversation state
         self._messages: List[Dict[str, str]] = []
@@ -331,6 +343,10 @@ class VoiceSession:
         """Set the WebSocket send callback."""
         self._send_message = callback
 
+    def set_close_callback(self, callback: Callable[[], Awaitable[None]]) -> None:
+        """Set the callback that closes the WebSocket, used when the visitor's audio drops."""
+        self._close_callback = callback
+
     async def _send_app_message(self, data: Dict) -> None:
         """Send an app message to the client."""
         if self._send_message:
@@ -345,8 +361,21 @@ class VoiceSession:
 
         # Set up audio track callback
         self._webrtc.webrtc._on_audio_track = self._on_audio_track
+        self._webrtc.on_state_change = self._on_webrtc_state_change
 
         await self._webrtc.start()
+
+    async def _on_webrtc_state_change(self, state: str) -> None:
+        """End the session when the visitor's audio connection is lost.
+
+        aiortc reports "failed" about 30s after a phone stops answering ICE consent checks
+        (lost network, closed or suspended page). The client has no ICE restart, so the
+        session can't recover; closing the WebSocket runs the normal cleanup.
+        """
+        if state in ("failed", "closed") and not self._shutdown:
+            logger.info(f"WebRTC {state} for session {self.session_id}, ending session")
+            if self._close_callback:
+                await self._close_callback()
 
     async def _on_audio_track(self, track) -> None:
         """Handle incoming audio track from browser."""
@@ -514,9 +543,21 @@ class VoiceSession:
         msg = data.get("message", "")
 
         if msg == "start":
-            await self.start()
+            # Run the script as its own task so the WebSocket keeps being read, and a
+            # disconnect is noticed while the script is still running.
+            if not self._script_task:
+                self._script_task = asyncio.create_task(self._run_script())
         elif msg == "end":
             await self.end()
+
+    async def _run_script(self) -> None:
+        """Run the session script, then delete the visitor's voice clone."""
+        try:
+            await self.start()
+        except Exception as e:
+            logger.error(f"Session {self.session_id} script failed: {e}")
+        finally:
+            await self.delete_cloned_voice()
 
     async def start(self) -> None:
         """Start the voice session (called when user taps Start)."""
@@ -530,7 +571,8 @@ class VoiceSession:
         logger.info(f"Starting session {self.session_id}")
 
         # Initialize clients
-        self._openai = AsyncOpenAI()
+        self._llm = llm.from_env()
+        self._llm_fast = llm.from_env(fast=True)
         self._elevenlabs = AsyncElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
         # Load voice list
@@ -605,6 +647,11 @@ class VoiceSession:
         """Clean up all resources."""
         self._shutdown = True
 
+        if self._script_task and not self._script_task.done():
+            self._script_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await self._script_task
+
         if self._transcription:
             await self._transcription.close()
             self._transcription = None
@@ -612,6 +659,8 @@ class VoiceSession:
         if self._webrtc:
             await self._webrtc.close()
             self._webrtc = None
+
+        await self.delete_cloned_voice()
 
         logger.info(f"Session {self.session_id} closed")
 
@@ -855,7 +904,7 @@ class VoiceSession:
             voice = await self._elevenlabs.voices.ivc.create(
                 name=voice_name,
                 files=[f],
-                description="vimh cloned voice",
+                description=CLONE_DESCRIPTION,
             )
 
         logger.info(f"Voice cloned successfully: {voice.voice_id}")
@@ -900,6 +949,28 @@ class VoiceSession:
             logger.error(f"Voice cloning failed: {e}")
             self._cloned_voice_id = ""  # Empty string signals failure
 
+    async def delete_cloned_voice(self) -> None:
+        """Delete this session's voice clone from ElevenLabs. Safe to call more than once."""
+        async with self._clone_cleanup_lock:
+            task = self._cloning_task
+            if task and not task.done():
+                # Let an in-flight clone finish so we can delete what it creates. If it
+                # takes too long, the stale clone sweep removes it later.
+                try:
+                    await asyncio.wait_for(asyncio.shield(task), timeout=90)
+                except Exception as e:
+                    logger.warning(f"Voice clone still pending at cleanup: {e!r}")
+
+            voice_id = self._cloned_voice_id
+            if not voice_id or not self._elevenlabs:
+                return
+            self._cloned_voice_id = ""
+            try:
+                await self._elevenlabs.voices.delete(voice_id)
+                logger.info(f"Deleted voice clone {voice_id} for session {self.session_id}")
+            except Exception as e:
+                logger.error(f"Failed to delete voice clone {voice_id}: {e}")
+
     async def stop_cloning(self) -> str:
         """Wait for cloning to complete and return voice ID."""
         # Wait for cloning with timeout
@@ -933,23 +1004,17 @@ class VoiceSession:
         prompt: str,
         system: Optional[str] = None,
         backup: Optional[str] = None,
-        max_tokens: int = 1024,
+        fast: bool = False,
     ) -> str:
-        """Call ChatGPT with prompt and optional system message."""
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+        """Call the language model with prompt and optional system message.
 
+        fast=True uses LLM_FAST_MODEL, for interview calls the visitor waits on.
+        """
+        model = self._llm_fast if fast else self._llm
         try:
-            response = await self._openai.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
-                max_tokens=max_tokens,
-            )
-            return response.choices[0].message.content
+            return await model.complete(prompt, system=system) or backup or ""
         except Exception as e:
-            logger.error(f"ChatGPT error: {e}")
+            logger.error(f"LLM error ({model.model}): {e}")
             return backup or ""
 
     def _build_dialog(
@@ -991,7 +1056,7 @@ class VoiceSession:
             self._get_string(prompt_key).format(question=question, transcript=transcript),
             system=self._get_string(system_key),
             backup=self._get_string(backup_key),
-            max_tokens=4,
+            fast=True,
         )
 
         result_lower = result.strip().lower()
@@ -1046,6 +1111,7 @@ class VoiceSession:
             self._get_string("convert_response_to_name_prompt").format(response=response),
             system=self._get_string("convert_response_to_name_system"),
             backup=self._get_string("convert_response_to_name_backup"),
+            fast=True,
         )
         normalized_name = self._normalize_name_candidate(llm_name)
         if normalized_name:
@@ -1392,21 +1458,12 @@ class VoiceSession:
             goals_prompt=self._goals_prompt
         )
 
-        try:
-            response = await self._openai.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=150
-            )
-            result = response.choices[0].message.content.strip()
-            logger.info(f"Generated midway question: {result}")
-            return result
-        except Exception as e:
-            logger.error(f"Failed to generate midway question: {e}")
+        result = await self._chatgpt(prompt, system=system, fast=True)
+        result = result.strip()
+        if not result:
             return self._get_string("generate_midway_question_backup")
+        logger.info(f"Generated midway question: {result}")
+        return result
 
     async def convert_midway_feedback(self, feedback: str) -> str:
         """Convert visitor feedback to first-person statement like 'I want to be more silly.'"""
@@ -1415,21 +1472,12 @@ class VoiceSession:
         system = self._get_string("convert_midway_feedback_system")
         prompt = self._get_string("convert_midway_feedback_prompt").format(feedback=feedback)
 
-        try:
-            response = await self._openai.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=100
-            )
-            result = response.choices[0].message.content.strip()
-            logger.info(f"Converted to: {result}")
-            return result
-        except Exception as e:
-            logger.error(f"Failed to convert midway feedback: {e}")
+        result = await self._chatgpt(prompt, system=system, fast=True)
+        result = result.strip()
+        if not result:
             return self._get_string("convert_midway_feedback_backup")
+        logger.info(f"Converted to: {result}")
+        return result
 
     async def update_goals_with_midway(self, midway_update: str) -> str:
         """Update the goals_prompt by incorporating the midway feedback."""
@@ -1440,19 +1488,38 @@ class VoiceSession:
         prompt = self._get_string("update_goals_with_midway_prompt").format(
             current_goals=self._goals_prompt, midway_update=midway_update)
 
-        try:
-            response = await self._openai.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=150
-            )
-            result = response.choices[0].message.content.strip()
-            logger.info(f"Updated goals to: {result}")
-            self._goals_prompt = result  # Also update internal state
-            return result
-        except Exception as e:
-            logger.error(f"Failed to update goals: {e}")
+        result = await self._chatgpt(prompt, system=system, fast=True)
+        result = result.strip()
+        if not result:
             return self._get_string("update_goals_with_midway_backup")
+        logger.info(f"Updated goals to: {result}")
+        self._goals_prompt = result  # Also update internal state
+        return result
+
+
+async def delete_stale_voice_clones(elevenlabs: AsyncElevenLabs) -> int:
+    """Delete session voice clones that outlived any session, e.g. after a server crash.
+
+    Only touches clones whose description marks them as made by a session, and only
+    those older than STALE_CLONE_SECONDS, so clones in use by live sessions (on this
+    or another server sharing the account) are left alone.
+    """
+    response = await elevenlabs.voices.get_all(show_legacy=True)
+    now = time.time()
+    deleted = 0
+    for voice in response.voices:
+        created = getattr(voice, "created_at_unix", None)
+        if (
+            voice.category != "cloned"
+            or not (voice.description or "").startswith("vimh")
+            or not created
+            or now - created < STALE_CLONE_SECONDS
+        ):
+            continue
+        try:
+            await elevenlabs.voices.delete(voice.voice_id)
+            deleted += 1
+            logger.info(f"Deleted stale voice clone {voice.name} ({voice.voice_id})")
+        except Exception as e:
+            logger.error(f"Failed to delete stale voice clone {voice.voice_id}: {e}")
+    return deleted

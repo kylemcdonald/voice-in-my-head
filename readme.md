@@ -9,7 +9,7 @@
 
 ## Server Setup
 
-Create a cloud server on Digital Ocean. For 4 simultaneous sessions, 2 vCPU and 4GB RAM is sufficient. After creating the machine, add the IP address to the appropriate DNS record.
+Create a cloud server on Digital Ocean. For 4 simultaneous sessions, 2 vCPU and 2GB RAM is sufficient (measured; see CLAUDE.md). After creating the machine, add the IP address to the appropriate DNS record.
 
 ### Install System Dependencies
 
@@ -53,6 +53,11 @@ Create `/opt/vimh/.env`:
 ```
 ELEVENLABS_API_KEY=...
 OPENAI_API_KEY=...
+CLAUDE_API_KEY=...
+LLM_MODEL=claude-sonnet-5-5       # Interjections, summaries, closing memory
+LLM_REASONING=off                # off, low, medium or high
+LLM_FAST_MODEL=claude-haiku-5-5  # Interview calls the visitor waits on
+LLM_FAST_REASONING=off
 ASSEMBLYAI_API_KEY=...
 TURN_TIME_SECONDS=50
 TOTAL_TIME_MINUTES=25

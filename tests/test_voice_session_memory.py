@@ -12,7 +12,7 @@ async def test_convert_experience_to_memory_returns_valid_response(monkeypatch):
         "convert_experience_to_memory_backup": "backup memory",
     })
 
-    async def fake_chatgpt(prompt, system=None, backup=None, max_tokens=1024):
+    async def fake_chatgpt(prompt, system=None, backup=None, fast=False):
         assert prompt == "prompt We heard anything can happen next in the room"
         assert system == "system "
         assert backup == "backup memory"
@@ -40,7 +40,7 @@ async def test_convert_experience_to_memory_rejects_placeholder_response(monkeyp
         "convert_experience_to_memory_backup": "backup memory",
     })
 
-    async def fake_chatgpt(prompt, system=None, backup=None, max_tokens=1024):
+    async def fake_chatgpt(prompt, system=None, backup=None, fast=False):
         return (
             'One phrase stood out to me, "[insert phrase here]". '
             'Repeat after me: "[insert phrase here]".'

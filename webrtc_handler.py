@@ -10,6 +10,7 @@ Manages:
 
 import asyncio
 import json
+import os
 import logging
 from typing import Callable, Optional, Awaitable
 from dataclasses import dataclass
@@ -21,12 +22,14 @@ from audio_tracks import AudioOutputTrack, AudioInputHandler
 
 logger = logging.getLogger(__name__)
 
-# STUN servers for NAT traversal
+# STUN servers for NAT traversal. A server with a public IP can set WEBRTC_SERVER_STUN=""
+# to skip STUN: on DigitalOcean, aiortc's STUN queries from the private VPC interface
+# time out and delay every offer by ~5s.
+SERVER_STUN = os.getenv(
+    "WEBRTC_SERVER_STUN", "stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302"
+)
 ICE_SERVERS = RTCConfiguration(
-    iceServers=[
-        RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
-        RTCIceServer(urls=["stun:stun1.l.google.com:19302"]),
-    ]
+    iceServers=[RTCIceServer(urls=[url.strip()]) for url in SERVER_STUN.split(",") if url.strip()]
 )
 
 
@@ -264,6 +267,8 @@ class WebRTCSession:
         )
         self._send_message: Optional[Callable[[str], Awaitable[None]]] = None
         self._connected = asyncio.Event()
+        # Optional application callback for connection state changes.
+        self.on_state_change: Optional[Callable[[str], Awaitable[None]]] = None
 
     def set_send_callback(self, callback: Callable[[str], Awaitable[None]]) -> None:
         """Set the callback for sending WebSocket messages."""
@@ -275,6 +280,8 @@ class WebRTCSession:
             self._connected.set()
         elif state in ("failed", "closed"):
             self._connected.clear()
+        if self.on_state_change:
+            await self.on_state_change(state)
 
     async def start(self) -> None:
         """Start the session by creating and sending an offer."""

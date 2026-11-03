@@ -90,8 +90,8 @@ async def test_classify_short_listen_response_uses_short_prompt(monkeypatch):
 
     calls = []
 
-    async def fake_chatgpt(prompt, system=None, backup=None, max_tokens=1024):
-        calls.append((prompt, system, backup, max_tokens))
+    async def fake_chatgpt(prompt, system=None, backup=None, fast=False):
+        calls.append((prompt, system, backup))
         return "continue"
 
     monkeypatch.setattr(session, "_chatgpt", fake_chatgpt)
@@ -99,7 +99,7 @@ async def test_classify_short_listen_response_uses_short_prompt(monkeypatch):
     result = await session._classify_listen_response("Hmm...", mode="short")
 
     assert result == "answer"
-    assert calls == [("short-prompt Hmm...", "short-system", "answer", 4)]
+    assert calls == [("short-prompt Hmm...", "short-system", "answer")]
 
 
 @pytest.mark.asyncio
@@ -116,8 +116,8 @@ async def test_classify_long_listen_response_includes_question(monkeypatch):
 
     calls = []
 
-    async def fake_chatgpt(prompt, system=None, backup=None, max_tokens=1024):
-        calls.append((prompt, system, backup, max_tokens))
+    async def fake_chatgpt(prompt, system=None, backup=None, fast=False):
+        calls.append((prompt, system, backup))
         return "continue"
 
     monkeypatch.setattr(session, "_chatgpt", fake_chatgpt)
@@ -133,5 +133,4 @@ async def test_classify_long_listen_response_includes_question(monkeypatch):
         "long-prompt What would help you most right now? / Hmm, give me a second.",
         "long-system",
         "answer",
-        4,
     )]

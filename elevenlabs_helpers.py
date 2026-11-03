@@ -3,7 +3,6 @@ import subprocess
 import os
 from helpers import log
 from remove_silence import remove_silence
-from elevenlabs.core.api_error import ApiError
 from elevenlabs import VoiceSettings
 
 def pcm_to_mp3(mp3_filename, pcm, samplerate):
@@ -60,30 +59,3 @@ def clone_voice(client, pcm, samplerate):
     )
     log(f"set voice settings for clone name={voice.name} id={voice.voice_id} settings={voice_settings}")
     return voice
-
-
-def remove_old_voices(client, max_voice_count=15):
-    voices = client.voices.get_all(show_legacy=True).voices
-    cloned = [e for e in voices if e.category == "cloned"]
-    vimh_voices = []
-    for voice in cloned:
-        try:
-            date = voice.name
-            if date[-1] == "Z":
-                date = date[:-1]
-            dt = datetime.datetime.fromisoformat(date)
-            vimh_voices.append([dt, voice])
-        except ValueError:
-            pass
-    vimh_voices.sort()
-    deleted_voices = []
-    for dt, voice in vimh_voices[:-max_voice_count]:
-        try:
-            client.voices.delete(voice.voice_id)
-            log(f"deleted {voice.name}")
-        except ApiError:
-            log(f"already deleted {voice.name}")
-            pass
-        deleted_voices.append(voice.name)
-    leftover_voices = [e for e in voices if e.name not in deleted_voices]
-    return leftover_voices

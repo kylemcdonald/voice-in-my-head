@@ -23,9 +23,9 @@ from aiohttp import web, WSMsgType
 import aiohttp_cors
 from dotenv import load_dotenv
 
-from webrtc_handler import WebRTCSession
-
 load_dotenv()
+
+from webrtc_handler import WebRTCSession  # noqa: E402  (reads env at import)
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +153,7 @@ async def websocket_handler(request: web.Request) -> web.WebSocketResponse:
             await ws.send_str(msg)
 
     session.set_send_callback(send_message)
+    session.set_close_callback(ws.close)
 
     try:
         # Start the WebRTC session
@@ -188,9 +189,41 @@ async def health(request: web.Request) -> web.Response:
     })
 
 
+async def preload_voice_session(app: web.Application) -> None:
+    """Import voice_session (and its SDKs) at startup so the first visitor doesn't wait for it."""
+    import voice_session  # noqa: F401
+
+
+async def sweep_stale_voice_clones() -> None:
+    """Every 30 minutes, delete session voice clones orphaned by a crash or restart."""
+    from elevenlabs import AsyncElevenLabs
+    from voice_session import delete_stale_voice_clones
+
+    elevenlabs = AsyncElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
+    while True:
+        try:
+            deleted = await delete_stale_voice_clones(elevenlabs)
+            if deleted:
+                logger.info(f"Deleted {deleted} stale voice clones")
+        except Exception as e:
+            logger.error(f"Stale voice clone sweep failed: {e}")
+        await asyncio.sleep(30 * 60)
+
+
+async def start_clone_sweep(app: web.Application) -> None:
+    app["clone_sweep"] = asyncio.create_task(sweep_stale_voice_clones())
+
+
+async def stop_clone_sweep(app: web.Application) -> None:
+    app["clone_sweep"].cancel()
+
+
 def create_app() -> web.Application:
     """Create and configure the aiohttp application."""
     app = web.Application()
+    app.on_startup.append(preload_voice_session)
+    app.on_startup.append(start_clone_sweep)
+    app.on_cleanup.append(stop_clone_sweep)
 
     # Add routes
     app.router.add_get("/", index)
