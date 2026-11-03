@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VIMH Network Test</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #fff; --ink: #1b1b1b; --muted: #6b6b6b; --line: #e4e4e0;
+    --ok: #137a3a; --ok-bg: #e3f4e8; --warn: #8a5a00; --warn-bg: #fdf0d2; --bad: #b3261e; --bad-bg: #fbe3e1;
+    --accent: #1f4fd1;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 480px; margin: 0 auto; padding: 10px 12px 40px; }
+  h1 { font-size: 15px; margin: 0; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .head .meta { color: var(--muted); font-size: 11px; text-align: right; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 7px; }
+  .verdict { font-weight: 650; font-size: 14px; border-radius: 10px; padding: 8px 10px; margin-bottom: 7px; }
+  .verdict.ok { background: var(--ok-bg); color: var(--ok); }
+  .verdict.warn { background: var(--warn-bg); color: var(--warn); }
+  .verdict.bad { background: var(--bad-bg); color: var(--bad); }
+  .verdict.run { background: #e8eefc; color: var(--accent); }
+  .kv { display: grid; grid-template-columns: 66px 1fr; gap: 1px 8px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { overflow-wrap: anywhere; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { font-weight: 500; color: var(--muted); font-size: 11px; text-align: right; padding: 0 0 2px 4px; }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  td { text-align: right; padding: 2px 0 2px 4px; border-top: 1px solid var(--line); white-space: nowrap; }
+  td.err { text-align: left; color: var(--bad); white-space: normal; font-size: 12px; }
+  .sub { color: var(--muted); font-size: 11px; }
+  .title { font-weight: 600; margin-bottom: 3px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+  button { font: inherit; font-size: 17px; font-weight: 600; border: 0; border-radius: 12px; padding: 14px; width: 100%;
+    background: var(--accent); color: #fff; }
+  button.secondary { background: #e9e9e6; color: var(--ink); }
+  .btnrow { display: flex; gap: 8px; margin-top: 8px; }
+  .prompt { font-size: 22px; font-weight: 700; text-align: center; margin: 6px 0; }
+  .meter { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; }
+  .meter > div { height: 100%; width: 0; background: var(--ok); transition: width 60ms linear; }
+  .intro p { margin: 6px 0; font-size: 15px; }
+  .quote { font-style: italic; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <h1>VIMH network test</h1>
+    <div class="meta" id="meta"></div>
+  </div>
+
+  <div class="card intro" id="intro">
+    <p><b>Before you start:</b> connect this phone to the venue network you'll be using.</p>
+    <p>Tap <b>Start</b> and allow the microphone. It takes about a minute. When the screen asks, say the phrase out loud.</p>
+    <p>When it says <b>Finished</b>, take a screenshot and send it back.</p>
+    <button id="start">Start</button>
+  </div>
+
+  <div id="interactive" class="card hidden"></div>
+  <div id="results" class="hidden"></div>
+</main>
+
+<script>
+const KEY = new URLSearchParams(location.search).get('k') || '';
+const R = {
+  started: new Date(),
+  ua: navigator.userAgent,
+  ws: {}, tests: [], pipeline: {}, api: null, isp: null, errors: [],
+  phase: 'idle',
+};
+let ws, hello, micStream, micTrack, audioCtx, remoteAudio;
+const listeners = new Set();
+
+const $ = id => document.getElementById(id);
+const sleep = t => new Promise(r => setTimeout(r, t));
+const fmtMs = v => v == null ? '—' : `${Math.round(v)}`;
+const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// --- WebSocket messaging -------------------------------------------------
+function send(msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
+function logToServer(event, data = {}) { send({ type: 'client_log', event, ...data }); }
+
+function waitFor(pred, timeout) {
+  return new Promise(resolve => {
+    const entry = msg => { if (pred(msg)) { listeners.delete(entry); clearTimeout(timer); resolve(msg); } };
+    const timer = setTimeout(() => { listeners.delete(entry); resolve(null); }, timeout);
+    listeners.add(entry);
+  });
+}
+
+function onServerMessage(msg) {
+  if (msg.type === 'isp') { R.isp = msg; render(); }
+  if (msg.type === 'api_probe') { R.api = msg.results; render(); }
+  if (msg.type === 'transcript') { R.pipeline.live = msg.text; updateInteractive(); }
+  if (msg.type === 'pipeline_error') { R.errors.push(`${msg.stage}: ${msg.error}`); render(); }
+  for (const fn of [...listeners]) fn(msg);
+}
+
+function connectWs() {
+  return new Promise((resolve, reject) => {
+    const t0 = performance.now();
+    ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws?k=${encodeURIComponent(KEY)}`);
+    ws.onmessage = e => onServerMessage(JSON.parse(e.data));
+    ws.onerror = () => reject(new Error('WebSocket failed'));
+    ws.onclose = () => { if (R.phase !== 'done') R.errors.push('WebSocket closed early'); };
+    waitFor(m => m.type === 'hello' || m.type === 'denied', 10000).then(m => {
+      if (!m) return reject(new Error('No reply from server'));
+      if (m.type === 'denied') return reject(new Error('Wrong or missing link key'));
+      R.ws.connect_ms = performance.now() - t0;
+      resolve(m);
+    });
+  });
+}
+
+async function wsPing(n = 12) {
+  const rtts = [];
+  for (let i = 0; i < n; i++) {
+    const t = performance.now();
+    send({ type: 'ping', t });
+    const m = await waitFor(m => m.type === 'pong' && m.t === t, 3000);
+    if (m) rtts.push(performance.now() - t);
+    await sleep(80);
+  }
+  return { median: median(rtts), min: Math.min(...rtts), max: Math.max(...rtts), n: rtts.length, sent: n };
+}
+
+// --- Audio helpers ---------------------------------------------------------
+function levelMeter(stream) {
+  const src = audioCtx.createMediaStreamSource(stream);
+  const an = audioCtx.createAnalyser();
+  an.fftSize = 1024;
+  src.connect(an);
+  const buf = new Float32Array(an.fftSize);
+  return () => { an.getFloatTimeDomainData(buf); let p = 0; for (const v of buf) p = Math.max(p, Math.abs(v)); return p; };
+}
+
+function attachRemote(stream) {
+  remoteAudio.srcObject = stream;
+  remoteAudio.play().catch(e => logToServer('remote-play-failed', { message: e.message }));
+}
+
+// --- WebRTC tests ---------------------------------------------------------
+function parseCandidate(c) {
+  const parts = c.split(' ');
+  const type = parts[parts.indexOf('typ') + 1];
+  return { type, protocol: (parts[2] || '').toLowerCase(), address: parts[4] };
+}
+
+// Resolve when gathering completes, or shortly after the candidate we need shows up
+// (browsers can keep gathering for many seconds after the useful candidates arrive).
+function waitGathering(pc, timeout, enough) {
+  return new Promise(resolve => {
+    let grace = null;
+    const finish = v => { clearTimeout(timer); clearInterval(poll); resolve(v); };
+    const timer = setTimeout(() => finish(false), timeout);
+    const poll = setInterval(() => {
+      if (pc.iceGatheringState === 'complete') finish(true);
+      else if (!grace && enough()) grace = setTimeout(() => finish(true), 300);
+    }, 50);
+  });
+}
+
+function isConnected(pc) {
+  return pc.connectionState === 'connected' || ['connected', 'completed'].includes(pc.iceConnectionState);
+}
+
+function waitConnected(pc, timeout) {
+  return new Promise(resolve => {
+    const check = () => {
+      if (isConnected(pc)) { clearTimeout(timer); resolve('connected'); }
+      else if (pc.connectionState === 'failed' || pc.iceConnectionState === 'failed') { clearTimeout(timer); resolve('failed'); }
+    };
+    const timer = setTimeout(() => resolve('timeout'), timeout);
+    pc.addEventListener('connectionstatechange', check);
+    pc.addEventListener('iceconnectionstatechange', check);
+    check();
+  });
+}
+
+async function dcPing(dc, n = 10) {
+  if (dc.readyState !== 'open') {
+    await new Promise(r => { dc.onopen = r; setTimeout(r, 4000); });
+    if (dc.readyState !== 'open') return null;
+  }
+  const rtts = [];
+  for (let i = 0; i < n; i++) {
+    const t = performance.now();
+    const got = new Promise(r => { dc.onmessage = e => r(JSON.parse(e.data).t === t); setTimeout(() => r(false), 2000); });
+    dc.send(JSON.stringify({ t }));
+    if (await got) rtts.push(performance.now() - t);
+    await sleep(60);
+  }
+  return { median: median(rtts), min: Math.min(...rtts), max: Math.max(...rtts), n: rtts.length, sent: n };
+}
+
+async function collectStats(pc) {
+  const stats = await pc.getStats();
+  let pair = null, pairId = null;
+  const out = {};
+  stats.forEach(s => { if (s.type === 'transport' && s.selectedCandidatePairId) pairId = s.selectedCandidatePairId; });
+  if (pairId) pair = stats.get(pairId);
+  if (!pair) stats.forEach(s => { if (s.type === 'candidate-pair' && (s.selected || (s.nominated && s.state === 'succeeded'))) pair = s; });
+  if (pair) {
+    const local = stats.get(pair.localCandidateId) || {};
+    const remote = stats.get(pair.remoteCandidateId) || {};
+    out.local_type = local.candidateType;
+    out.protocol = local.protocol;
+    out.relay_protocol = local.relayProtocol;
+    out.remote_address = remote.address || remote.ip;
+    if (pair.currentRoundTripTime != null) out.pair_rtt_ms = pair.currentRoundTripTime * 1000;
+  }
+  stats.forEach(s => {
+    if (s.type === 'inbound-rtp' && (s.kind || s.mediaType) === 'audio') {
+      out.in_packets = s.packetsReceived; out.in_lost = s.packetsLost;
+      if (s.jitter != null) out.jitter_ms = s.jitter * 1000;
+    }
+    if (s.type === 'outbound-rtp' && (s.kind || s.mediaType) === 'audio') out.out_packets = s.packetsSent;
+  });
+  return out;
+}
+
+async function runPcTest(t, keep = false) {
+  const res = { id: t.id, label: t.label, short: t.short };
+  R.tests = R.tests.filter(x => x.id !== t.id).concat([res]);
+  res.status = 'running'; render();
+
+  const pc = new RTCPeerConnection({ iceServers: t.ice, iceTransportPolicy: t.policy });
+  pc.addTrack(micTrack, micStream);
+  const dc = pc.createDataChannel('ping');
+  const cands = [];
+  pc.onicecandidate = e => { if (e.candidate && e.candidate.candidate) cands.push(parseCandidate(e.candidate.candidate)); };
+  pc.ontrack = e => attachRemote(e.streams[0] || new MediaStream([e.track]));
+
+  // With keep, the connection stays open whenever ICE connected (used by the voice test).
+  const finish = (ok, error) => {
+    res.ok = ok; res.status = ok ? 'ok' : 'fail'; if (error) res.error = error;
+    if (!keep || !res.connected) { send({ type: 'close_peer', test: t.id }); pc.close(); }
+    render();
+    return { res, pc };
+  };
+
+  try {
+    await pc.setLocalDescription(await pc.createOffer());
+    const tg = performance.now();
+    // Generous timeouts: on slow links TURN over TCP/TLS takes several round trips to allocate.
+    // Good networks resolve early once the needed candidate shows up.
+    await waitGathering(pc, t.policy === 'relay' ? 20000 : 6000,
+      () => cands.some(c => c.type === (t.policy === 'relay' ? 'relay' : 'srflx')));
+    res.gather_ms = performance.now() - tg;
+    res.candidates = [...new Set(cands.map(c => `${c.type}/${c.protocol}`))];
+    if (t.policy === 'relay' && !cands.some(c => c.type === 'relay')) return finish(false, "Can't reach the TURN server (no relay candidate)");
+    if (!cands.length) return finish(false, 'No ICE candidates gathered');
+
+    const t0 = performance.now();
+    send({ type: 'offer', test: t.id, sdp: pc.localDescription.sdp });
+    const ans = await waitFor(m => m.type === 'answer' && m.test === t.id, 15000);
+    if (!ans) return finish(false, 'Server did not answer');
+    await pc.setRemoteDescription({ type: 'answer', sdp: ans.sdp });
+    const state = await waitConnected(pc, 20000);
+    res.connect_ms = performance.now() - t0;
+    if (state !== 'connected') return finish(false, `ICE ${state} after ${(res.connect_ms / 1000).toFixed(1)}s`);
+    res.connected = true;
+
+    res.dc = await dcPing(dc);
+    // Give audio up to 8s to start flowing; lossy links can stall for a few seconds.
+    const tAudio = performance.now();
+    do {
+      await sleep(500);
+      Object.assign(res, await collectStats(pc));
+    } while ((res.in_packets || 0) <= 20 && performance.now() - tAudio < 8000);
+    send({ type: 'server_stats', test: t.id });
+    const ss = await waitFor(m => m.type === 'server_stats' && m.test === t.id, 4000);
+    if (ss) { res.server_frames = ss.frames; res.server_peak_dbfs = ss.peak_dbfs; }
+    const audioOk = (res.in_packets || 0) > 20 && (res.server_frames || 0) > 20;
+    if (!audioOk) res.error = `Connected but audio not flowing (phone got ${res.in_packets || 0} pkts, server got ${res.server_frames || 0})`;
+    return finish(audioOk);
+  } catch (e) {
+    return finish(false, `${e.name}: ${e.message}`);
+  }
+}
+
+function buildTests() {
+  const h = hello.turn.host, auth = { username: hello.turn.username, credential: hello.turn.credential };
+  return [
+    { id: 'direct', short: 'Direct UDP', label: 'Direct UDP (current setup)', policy: 'all',
+      ice: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] },
+    { id: 'turn_udp3478', short: 'TURN UDP 3478', label: 'TURN UDP 3478', policy: 'relay', ice: [{ urls: [`turn:${h}:3478?transport=udp`], ...auth }] },
+    { id: 'turn_udp443', short: 'TURN UDP 443', label: 'TURN UDP 443', policy: 'relay', ice: [{ urls: [`turn:${h}:443?transport=udp`], ...auth }] },
+    { id: 'turn_tcp443', short: 'TURN TCP 443', label: 'TURN TCP 443', policy: 'relay', ice: [{ urls: [`turn:${h}:443?transport=tcp`], ...auth }] },
+    { id: 'turn_tls443', short: 'TURN TLS 443', label: 'TURN TLS 443', policy: 'relay', ice: [{ urls: [`turns:${h}:443?transport=tcp`], ...auth }] },
+  ];
+}
+
+// --- Voice pipeline ---------------------------------------------------------
+let micLevel = null, meterTimer = null;
+
+function updateInteractive() {
+  const box = $('interactive');
+  const p = R.pipeline;
+  if (p.stage === 'speak') {
+    box.innerHTML = `<div class="sub">Voice test (${esc(p.path)})</div>
+      <div class="prompt">Say out loud:<br>“Hello, can you hear me?”</div>
+      <div class="meter"><div id="lvl"></div></div>
+      <div class="sub" style="margin-top:6px">Heard: <span class="quote">${esc(p.live || '…')}</span></div>`;
+  } else if (p.stage === 'thinking') {
+    box.innerHTML = `<div class="prompt" style="font-size:17px">Got it. Getting a reply…</div><div class="sub">“${esc(p.live || '')}”</div>`;
+  } else if (p.stage === 'playing') {
+    box.innerHTML = `<div class="prompt" style="font-size:17px">🔊 Playing the reply. Listen…</div>`;
+  } else if (p.stage === 'ask') {
+    box.innerHTML = `<div class="prompt" style="font-size:18px">Did you hear a voice reply?</div>
+      <div class="btnrow"><button id="yes">Yes</button><button id="no" class="secondary">No</button></div>`;
+  }
+}
+
+async function runPipeline(candidates) {
+  const p = R.pipeline;
+  p.stage = 'connecting';
+  p.attempts = [];
+  $('interactive').classList.remove('hidden');
+  $('interactive').innerHTML = `<div class="prompt" style="font-size:17px">Connecting voice test…</div>`;
+  render();
+
+  // Use the first path that connects; fall back to the next one that passed earlier.
+  let res, pc;
+  for (const test of candidates) {
+    p.path = test.short;
+    ({ res, pc } = await runPcTest({ ...test, id: 'pipeline', label: `${test.short} (voice)` }, true));
+    R.tests = R.tests.filter(x => x.id !== 'pipeline');
+    p.attempts.push({ path: test.short, connected: !!res.connected, error: res.error, dc: res.dc, in_packets: res.in_packets, server_frames: res.server_frames });
+    if (res.connected) break;
+  }
+  if (!res.connected) {
+    p.error = `Could not connect (${p.attempts.map(a => `${a.path}: ${a.error}`).join('; ')})`;
+    p.stage = 'done'; $('interactive').classList.add('hidden'); return;
+  }
+  if (!res.ok) p.warning = res.error;
+
+  // Remote audio onset detection: WebAudio analyser plus inbound-rtp audio energy as backup.
+  let remoteLevel = null;
+  try {
+    const rs = remoteAudio.srcObject;
+    if (rs) remoteLevel = levelMeter(rs);
+  } catch (e) { logToServer('remote-analyser-failed', { message: e.message }); }
+
+  send({ type: 'pipeline_start', test: 'pipeline' });
+  const ready = await waitFor(m => m.type === 'stt_ready' || m.type === 'pipeline_error', 15000);
+  if (!ready || ready.type !== 'stt_ready') { p.error = 'Speech-to-text did not start'; p.stage = 'done'; cleanup(); return; }
+  p.stt_connect_ms = ready.stt_connect_ms;
+  p.stage = 'speak'; updateInteractive();
+  meterTimer = setInterval(() => { const el = $('lvl'); if (el && micLevel) el.style.width = `${Math.min(100, micLevel() * 160)}%`; }, 60);
+
+  // Watch for the reply audio arriving at the phone. The server sends silence until the reply,
+  // so the first loud remote audio is the TTS. WebAudio analyser first, inbound-rtp energy as backup.
+  let tFinal = null, deadline = performance.now() + 70000;
+  const onsetP = (async () => {
+    let lastEnergy = null;
+    while (performance.now() < deadline) {
+      if (remoteLevel && remoteLevel() > 0.02) return { t: performance.now(), method: 'analyser' };
+      let hit = null;
+      (await pc.getStats()).forEach(s => {
+        if (s.type === 'inbound-rtp' && (s.kind || s.mediaType) === 'audio' && s.totalAudioEnergy != null) {
+          if (lastEnergy != null && s.totalAudioEnergy - lastEnergy > 1e-4) hit = { t: performance.now(), method: 'rtp-energy' };
+          lastEnergy = s.totalAudioEnergy;
+        }
+      });
+      if (hit) return hit;
+      await sleep(25);
+    }
+    return null;
+  })();
+
+  waitFor(m => m.type === 'transcript' && m.final, 30000).then(m => {
+    if (!m) return;
+    tFinal = performance.now();
+    if (p.stage === 'speak') { p.stage = 'thinking'; updateInteractive(); }
+  });
+  const reply = await waitFor(m => m.type === 'reply_playing' || (m.type === 'pipeline_error' && m.fatal), 50000);
+  clearInterval(meterTimer);
+  const tReply = performance.now();
+  if (!reply || reply.type !== 'reply_playing') { p.error = p.error || 'No reply from the voice pipeline'; p.stage = 'done'; deadline = 0; cleanup(); return; }
+  Object.assign(p, reply);
+  p.stage = 'playing'; updateInteractive();
+  deadline = tReply + reply.audio_ms + 4000;
+
+  const onset = await onsetP;
+  if (onset) {
+    p.onset_method = onset.method;
+    if (tFinal != null) p.final_to_sound_ms = onset.t - tFinal;
+  }
+  await sleep(Math.max(0, reply.audio_ms - (performance.now() - tReply)) + 600);
+
+  p.stage = 'ask'; updateInteractive();
+  p.heard = await new Promise(resolve => {
+    $('yes').onclick = () => resolve('yes');
+    $('no').onclick = () => resolve('no');
+    setTimeout(() => resolve('no answer'), 90000);
+  });
+  p.stage = 'done';
+  cleanup();
+
+  function cleanup() {
+    clearInterval(meterTimer);
+    send({ type: 'close_peer', test: 'pipeline' });
+    pc.close();
+    $('interactive').classList.add('hidden');
+  }
+}
+
+// --- Rendering ---------------------------------------------------------------
+function deviceSummary() {
+  const ua = navigator.userAgent;
+  const ios = ua.match(/OS (\d+)_(\d+)/);
+  const android = ua.match(/Android ([\d.]+)/);
+  const browser = /CriOS/.test(ua) ? 'Chrome' : /FxiOS/.test(ua) ? 'Firefox' : /EdgiOS|Edg\//.test(ua) ? 'Edge'
+    : /Chrome\//.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'Browser';
+  const ver = (ua.match(/(?:Version|CriOS|Chrome|FxiOS)\/([\d.]+)/) || [])[1] || '';
+  const os = /iPhone/.test(ua) ? `iPhone iOS ${ios ? ios[1] + '.' + ios[2] : ''}` : /iPad/.test(ua) ? 'iPad' : android ? `Android ${android[1]}` : navigator.platform;
+  return `${os} · ${browser} ${ver.split('.').slice(0, 2).join('.')}`;
+}
+
+function verdict() {
+  if (R.phase === 'error') return ['bad', `❌ Test could not run: ${R.fatal}`];
+  if (R.phase !== 'done') return ['run', `⏳ Running… ${R.step || ''}`];
+  const direct = R.tests.find(t => t.id === 'direct');
+  const turns = R.tests.filter(t => t.id.startsWith('turn') && t.ok);
+  const p = R.pipeline;
+  const fallback = p.tts_provider && p.tts_provider !== 'ElevenLabs';
+  const voiceOk = p.heard === 'yes' && p.heard_speech && !fallback;
+  const voiceNote = voiceOk ? 'voice round trip confirmed'
+    : p.heard === 'yes' && fallback ? 'voice round trip works, but ElevenLabs failed (see errors)'
+    : p.heard === 'yes' ? 'reply heard, but no speech recognized' : 'voice reply NOT confirmed';
+  if (direct?.ok) return [voiceOk ? 'ok' : 'warn', `${voiceOk ? '✅' : '⚠️'} Finished. Direct UDP works (current setup), ${voiceNote}`];
+  if (turns.length) return ['warn', `⚠️ Finished. Direct UDP blocked, works via ${turns.map(t => t.short).join(', ')}. ${voiceNote}`];
+  return ['bad', '❌ Finished. No WebRTC audio path works on this network'];
+}
+
+function render() {
+  $('meta').innerHTML = `${hello ? `run <b>${hello.run_id}</b><br>` : ''}${R.started.toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}`;
+  if (R.phase === 'idle') return;
+  $('results').classList.remove('hidden');
+  const [cls, text] = verdict();
+  const isp = R.isp || {};
+  const w = R.ws.rtt;
+  const testRows = R.tests.map(t => {
+    const icon = t.status === 'running' ? '⏳' : t.ok ? '✅' : '❌';
+    if (!t.ok && t.status !== 'running') {
+      return `<tr><td>${icon} ${esc(t.short)}</td><td class="err" colspan="4">${esc(t.error || 'failed')}</td></tr>`;
+    }
+    const loss = t.in_packets != null ? `${(100 * (t.in_lost || 0) / Math.max(1, t.in_packets + (t.in_lost || 0))).toFixed(0)}%` : '—';
+    const via = t.local_type ? `${t.local_type}${t.relay_protocol ? '/' + t.relay_protocol : t.protocol ? '/' + t.protocol : ''}` : '';
+    return `<tr><td>${icon} ${esc(t.short)}</td><td>${fmtMs(t.connect_ms)}</td><td>${fmtMs(t.dc?.median ?? t.pair_rtt_ms)}</td>
+      <td>${loss} / ${fmtMs(t.jitter_ms)}</td><td class="sub">${esc(via)}</td></tr>`;
+  }).join('');
+  const d = R.tests.find(t => t.id === 'direct' && t.ok) || R.tests.find(t => t.ok);
+  const p = R.pipeline;
+  const heardCls = p.heard === 'yes' ? 'ok' : p.heard ? 'bad' : '';
+  const api = R.api ? Object.entries(R.api).map(([k, v]) => v.error ? `${k} ❌` : `${k} ${v.tcp_ms}+${v.tls_ms}`).join(' · ') : '…';
+
+  $('results').innerHTML = `
+    <div class="verdict ${cls}">${esc(text)}</div>
+    <div class="card kv">
+      <div class="k">Network</div><div class="v">${esc(isp.org || '…')}${isp.city ? ` · ${esc(isp.city)}, ${esc(isp.country)}` : ''}<br><span class="sub">${esc(hello?.client_ip || '')}</span></div>
+      <div class="k">Device</div><div class="v">${esc(deviceSummary())}<br><span class="sub">mic: ${esc(micTrack?.label || '—')}</span></div>
+      <div class="k">Server</div><div class="v">${esc(hello?.server || '…')}</div>
+      <div class="k">HTTPS/WS</div><div class="v">${w ? `<span class="ok">✅</span> RTT ${fmtMs(w.median)} ms <span class="sub">(${fmtMs(w.min)}–${fmtMs(w.max)}, ${w.n}/${w.sent})</span>` : '…'}</div>
+    </div>
+    <div class="card">
+      <div class="title">WebRTC audio paths</div>
+      <table>
+        <tr><th>path</th><th>connect ms</th><th>RTT ms</th><th>loss / jitter</th><th>via</th></tr>
+        ${testRows || '<tr><td colspan="5" class="sub">…</td></tr>'}
+      </table>
+      ${d ? `<div class="sub" style="margin-top:4px">Audio on ${esc(d.short)}: phone→server ${d.server_frames ?? '—'} frames (peak ${d.server_peak_dbfs ?? '—'} dBFS) · server→phone ${d.in_packets ?? '—'} pkts</div>` : ''}
+    </div>
+    <div class="card">
+      <div class="title">Voice pipeline ${p.path ? `<span class="sub">via ${esc(p.path)}</span>` : ''}</div>
+      ${p.error ? `<div class="bad">❌ ${esc(p.error)}</div>` : ''}
+      ${p.warning ? `<div class="warn">⚠️ ${esc(p.warning)}</div>` : ''}
+      ${p.reply ? `<div class="kv">
+        <div class="k">You said</div><div class="v quote">${p.heard_speech ? `“${esc(p.transcript)}”` : '<span class="bad">nothing recognized</span>'}</div>
+        <div class="k">Reply</div><div class="v quote">“${esc(p.reply)}”</div>
+        <div class="k">Timing</div><div class="v">STT connect ${fmtMs(p.stt_connect_ms)} · LLM ${fmtMs(p.llm_ms)} · TTS ${p.tts_provider === 'ElevenLabs' ? '' : `<b class="bad">${esc(p.tts_provider)}</b> `}1st byte ${fmtMs(p.tts_first_byte_ms)} / total ${fmtMs(p.tts_total_ms)} ms</div>
+        <div class="k">Delay</div><div class="v">${p.final_to_sound_ms != null ? `<b>${fmtMs(p.final_to_sound_ms)} ms</b>` : '<span class="sub">not measured</span>'} <span class="sub">end of turn → voice heard (server ${fmtMs(p.server_turn_to_audio_ms)} ms${p.onset_method ? '' : ', phone onset not detected'})</span></div>
+        <div class="k">Heard?</div><div class="v ${heardCls}"><b>${p.heard ? (p.heard === 'yes' ? '✅ YES' : '❌ ' + esc(p.heard.toUpperCase())) : '…'}</b></div>
+      </div>` : (!p.error ? '<div class="sub">…</div>' : '')}
+    </div>
+    <div class="card sub">Frankfurt→APIs (TCP+TLS ms): ${esc(api)}
+      ${R.errors.length ? `<div class="bad">Errors: ${esc(R.errors.join(' | '))}</div>` : ''}
+    </div>`;
+}
+
+// --- Main ------------------------------------------------------------------------
+async function main() {
+  $('intro').classList.add('hidden');
+  R.phase = 'running';
+  // AudioContext and the playback element must be unlocked inside the tap handler.
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx.resume();
+  remoteAudio = document.createElement('audio');
+  remoteAudio.autoplay = true; remoteAudio.playsInline = true; remoteAudio.setAttribute('playsinline', '');
+  document.body.appendChild(remoteAudio);
+
+  try {
+    R.step = 'microphone'; render();
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    micTrack = micStream.getAudioTracks()[0];
+    micLevel = levelMeter(micStream);
+  } catch (e) {
+    R.phase = 'error'; R.fatal = `microphone failed (${e.name}: ${e.message})`; render(); return;
+  }
+
+  try {
+    R.step = 'connecting to server'; render();
+    hello = await connectWs();
+    R.step = 'measuring server latency'; render();
+    R.ws.rtt = await wsPing();
+  } catch (e) {
+    R.phase = 'error'; R.fatal = e.message; render(); return;
+  }
+
+  const tests = buildTests();
+  for (const t of tests) {
+    R.step = t.label; render();
+    await runPcTest(t);
+  }
+
+  const working = tests.filter(t => R.tests.find(r => r.id === t.id)?.ok);
+  if (working.length) {
+    R.step = 'voice test'; render();
+    await runPipeline(working);
+  } else {
+    R.pipeline.error = 'Skipped: no WebRTC path connected';
+  }
+
+  R.phase = 'done';
+  micStream.getTracks().forEach(t => t.stop());
+  render();
+  send({ type: 'result', result: { ...R, started: R.started.toISOString(), device: deviceSummary(), mic: micTrack?.label } });
+  window.scrollTo(0, 0);
+}
+
+$('start').onclick = main;
+render();
+if (!KEY) { $('intro').innerHTML = '<p class="bad"><b>This link is missing its key.</b> Please use the full link you were sent.</p>'; }
+</script>
+</body>
+</html>

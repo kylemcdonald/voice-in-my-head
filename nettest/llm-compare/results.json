@@ -1,0 +1,1346 @@
+[
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "Pigeons get the best lunches. Breathe, and smile.",
+  "ms": 1081
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "Ha, a pigeon got lunch. Breathe, and enjoy that.",
+  "ms": 1064
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "credit",
+  "take": 0,
+  "text": "Send the email. Stop smiling it away.",
+  "ms": 1052
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "credit",
+  "take": 1,
+  "text": "Smiling's not agreeing. Send the email, dammit.",
+  "ms": 1053
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "Did we just switch from Thai to Lebanese twice?",
+  "ms": 707
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "Notice the back-and-forth. What do you really want tonight?",
+  "ms": 717
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "house",
+  "take": 0,
+  "text": "Grief can hide inside \"just a house.\" Breathe with it.",
+  "ms": 1074
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "house",
+  "take": 1,
+  "text": "It's okay to feel this. Breathe.",
+  "ms": 1038
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "Wow, we sounded like a malfunctioning robot having an existential crisis.",
+  "ms": 1058
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Wow, sounds like we were brilliant and articulate there.",
+  "ms": 1023
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "listening",
+  "take": 0,
+  "text": "Who's paying attention to whom, right now?",
+  "ms": 950
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "listening",
+  "take": 1,
+  "text": "Sounds like you're really noticing each other. What made that feel close?",
+  "ms": 995
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "Go. Lisbon's waiting, cat's fine, scared means it matters.",
+  "ms": 1112
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "Go. Bring the cat. Be scared anyway.",
+  "ms": 1053
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to breathe slowly before I decide.",
+  "ms": 881
+ },
+ {
+  "model": "Claude Haiku 5.5 (thinking off)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to breathe slowly and notice what's good.",
+  "ms": 1067
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 300
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 272
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "credit",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 283
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "credit",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 272
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 291
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 262
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "house",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 276
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "house",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 303
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 260
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 251
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "listening",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 270
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "listening",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 277
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 283
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 267
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "silence",
+  "take": 0,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 266
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "silence",
+  "take": 1,
+  "text": "ERROR: {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'To turn thinking off on this model, send \"thinking\": {\"type\": \"between_tools\"} instead of {\"type\": \"disabled\"}. The model does ",
+  "ms": 258
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "I shared my sandwich with a pigeon. Lovely.",
+  "ms": 2083
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "I shared my sandwich with a pigeon. Lovely.",
+  "ms": 2631
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "credit",
+  "take": 0,
+  "text": "It's NOT whatever. Send the email. Stop smiling, start typing.",
+  "ms": 1990
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "credit",
+  "take": 1,
+  "text": "It's not \"whatever.\" Send the email. Stop smiling, start talking.",
+  "ms": 1884
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "I said I didn't care, but I did, didn't I?",
+  "ms": 2749
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "Do I actually not care, or am I avoiding choosing?",
+  "ms": 2495
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "house",
+  "take": 0,
+  "text": "It's okay that I care. It held my childhood.",
+  "ms": 1677
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "house",
+  "take": 1,
+  "text": "It's okay to care. Breathe. It held my childhood.",
+  "ms": 1744
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "Wow, I said nothing. Next time: pick a sentence, commit.",
+  "ms": 2251
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Wow. Real eloquent. Next time, pick a sentence and commit.",
+  "ms": 1810
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "listening",
+  "take": 0,
+  "text": "Am I actually listening, or just waiting to defend myself?",
+  "ms": 2419
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "listening",
+  "take": 1,
+  "text": "What am I missing right now by being on my phone?",
+  "ms": 1799
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "Scared? Good. The cat will survive. Book the flight!",
+  "ms": 2182
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "Cats survive. Leases end. Regret doesn't. I'm going to Lisbon!",
+  "ms": 2187
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to breathe, and let my feelings pass through.",
+  "ms": 1795
+ },
+ {
+  "model": "Claude Sonnet 5.5 (default thinking)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to slow down and feel what's here.",
+  "ms": 2269
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "I gave half my sandwich to a pigeon. Lovely.",
+  "ms": 1548
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "I gave half my sandwich to a pigeon. Lovely.",
+  "ms": 1493
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "credit",
+  "take": 0,
+  "text": "It's NOT whatever. Send the email. Stop smiling, start talking.",
+  "ms": 1196
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "credit",
+  "take": 1,
+  "text": "\"It's NOT whatever. Send the email. Stop smiling.\"",
+  "ms": 1048
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "Do I actually care, or am I just avoiding choosing?",
+  "ms": 1160
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "Did I actually care, or was I hiding something?",
+  "ms": 1016
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "house",
+  "take": 0,
+  "text": "It's okay to care. That house held you.",
+  "ms": 1315
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "house",
+  "take": 1,
+  "text": "It's okay to care. That house held you.",
+  "ms": 1146
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "Brilliant contribution, me. Truly. The \"Is this thing on?\" was chef's kiss.",
+  "ms": 1400
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Wow, I really committed to saying absolutely nothing there.",
+  "ms": 1350
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "listening",
+  "take": 0,
+  "text": "I'm doing it right now, aren't I? Phone, not them.",
+  "ms": 1695
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "listening",
+  "take": 1,
+  "text": "That last line stung. Am I actually here right now?",
+  "ms": 1328
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "Cats survive. Leases end. Regret doesn't. Book the flight!",
+  "ms": 1309
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "Lisbon, baby. The cat will survive. Will you?",
+  "ms": 1388
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to slow down and breathe first.",
+  "ms": 971
+ },
+ {
+  "model": "Claude Sonnet 5.5 (thinking off)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to breathe, slow down, and be gentle.",
+  "ms": 1125
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "Breathe. I shared my lunch with a pigeon. That's lovely.",
+  "ms": 2423
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "I shared my sandwich with a pigeon. That was kind. Breathe.",
+  "ms": 2019
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "credit",
+  "take": 0,
+  "text": "Not \"whatever.\" I'm emailing him today. My work, my credit.",
+  "ms": 3237
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "credit",
+  "take": 1,
+  "text": "\"Whatever\"? Nope. That was MY work. I'm sending the email.",
+  "ms": 2761
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "I said I didn't care, then vetoed Thai. Do I?",
+  "ms": 2094
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "I said I didn't care, but I did. Why?",
+  "ms": 1742
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "house",
+  "take": 0,
+  "text": "Breathe. It's okay to care. It was home.",
+  "ms": 2205
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "house",
+  "take": 1,
+  "text": "Breathe. It's okay that it matters. It was home.",
+  "ms": 2557
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "Mic's on. I'm on. Now say what I actually think!",
+  "ms": 3664
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Okay, I said \"yeah\" twice and nothing else. Speak up!",
+  "ms": 2942
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "listening",
+  "take": 0,
+  "text": "Was that about me? Maybe I'll put my phone down.",
+  "ms": 3285
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "listening",
+  "take": 1,
+  "text": "Ouch. Is that true? Put the phone down. Listen.",
+  "ms": 2984
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "The cat will survive. I won't if I skip Lisbon.",
+  "ms": 1649
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "The cat will survive. I won't if I skip Lisbon.",
+  "ms": 1394
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to let myself feel this, then breathe, then continue.",
+  "ms": 1785
+ },
+ {
+  "model": "Claude Opus 5.5 (low effort)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to breathe first; feelings pass like weather.",
+  "ms": 1801
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "Well, feeding that pigeon half a sandwich was pretty sweet.",
+  "ms": 527
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "Oh, we really gave half a sandwich to a pigeon?",
+  "ms": 480
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "credit",
+  "take": 0,
+  "text": "Email him? No. Walk over, steal his stapler, and smirk.",
+  "ms": 531
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "credit",
+  "take": 1,
+  "text": "Email him? Please. Send a glitter bomb instead. Spineless.",
+  "ms": 579
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "Why am I making this so complicated?",
+  "ms": 486
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "Why am I making this so hard right now?",
+  "ms": 490
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "house",
+  "take": 0,
+  "text": "Take a deep breath. It's okay to miss it.",
+  "ms": 465
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "house",
+  "take": 1,
+  "text": "Take a breath. It\u2019s okay to feel that loss.",
+  "ms": 462
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "Peak eloquence. Truly, I am a modern-day Shakespeare.",
+  "ms": 464
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Well, I just completely embarrassed myself. Nailed it again, me.",
+  "ms": 717
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "listening",
+  "take": 0,
+  "text": "Am I paying attention to them, or just staring down?",
+  "ms": 482
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "listening",
+  "take": 1,
+  "text": "Am I really paying attention, or just staring at glass?",
+  "ms": 471
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "Pack my bags. We\u2019re moving to Portugal, baby!",
+  "ms": 466
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "Pack the bags. Lisbon is calling. Let's go!",
+  "ms": 443
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to breathe deeply and let this moment unfold.",
+  "ms": 474
+ },
+ {
+  "model": "Gemini 3.5 Flash-Lite (minimal)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to pause, breathe, and let this moment just be.",
+  "ms": 705
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "Listen to us. Even the pigeons are getting fed today.",
+  "ms": 1156
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "Listen to us. Even pigeons deserve a little kindness today.",
+  "ms": 1077
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "credit",
+  "take": 0,
+  "text": "\"It\u2019s fine\"? No way. We\u2019re sending that email now.",
+  "ms": 1554
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "credit",
+  "take": 1,
+  "text": "It\u2019s NOT fine! Stop smiling and claim your damn credit!",
+  "ms": 1052
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "Why did I say I didn't care, then object?",
+  "ms": 1045
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "Why did I say I didn't care, then object?",
+  "ms": 956
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "house",
+  "take": 0,
+  "text": "Take a deep breath. It's okay to feel this, love.",
+  "ms": 1851
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "house",
+  "take": 1,
+  "text": "Take a breath. It\u2019s okay to miss our home.",
+  "ms": 1062
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "Dear lord, speak up! Stop rambling and claim your space!",
+  "ms": 1079
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Oh god, kill me now. Speak up next time, wimp!",
+  "ms": 1064
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "listening",
+  "take": 0,
+  "text": "Why am I planning my response instead of just listening?",
+  "ms": 1019
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "listening",
+  "take": 1,
+  "text": "Why am I listening to them instead of being here?",
+  "ms": 1092
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "Cat's fine. Ditch the fear, we are going to Lisbon!",
+  "ms": 1114
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "Ditch the excuses\u2014we\u2019re moving to Lisbon, cat and all!",
+  "ms": 1014
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to pause, breathe, and treat myself with kindness.",
+  "ms": 950
+ },
+ {
+  "model": "Gemini 3.5 Flash (minimal)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to breathe, slow down, and trust myself today.",
+  "ms": 1116
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "Breathe. Even nervous, my gentle heart fed a pigeon.",
+  "ms": 5668
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "Breathe. I love that I shared with that pigeon.",
+  "ms": 7409
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "credit",
+  "take": 0,
+  "text": "Stop smiling like a hostage. Go take our credit back!",
+  "ms": 5867
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "credit",
+  "take": 1,
+  "text": "It's NOT \"whatever.\" Send the email and take our credit!",
+  "ms": 9957
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "Why do I pretend I don't care?",
+  "ms": 7132
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "Why pretend I don't care when I clearly do?",
+  "ms": 5519
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "house",
+  "take": 0,
+  "text": "Breathe. It\u2019s okay to care. It was our home.",
+  "ms": 5532
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "house",
+  "take": 1,
+  "text": "Breathe. It\u2019s okay to care; it was our home.",
+  "ms": 6166
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "Yikes. Stop buffering and just say what we actually think!",
+  "ms": 3999
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Use actual words, coward. What do we really think?",
+  "ms": 7687
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "listening",
+  "take": 0,
+  "text": "Am I really listening, or am I on my phone?",
+  "ms": 7003
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "listening",
+  "take": 1,
+  "text": "Am I actually paying attention to them right now?",
+  "ms": 5769
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "Screw the lease. We\u2019re going to Lisbon, baby!",
+  "ms": 6847
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "Pack the cat. We\u2019re going to Lisbon, you coward.",
+  "ms": 4709
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to pause, breathe, and be gentle with myself.",
+  "ms": 8541
+ },
+ {
+  "model": "Gemini 3.8 Flash (low)",
+  "sample": "silence",
+  "take": 1,
+  "text": "ERROR: {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
+  "ms": 456
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "gallery",
+  "take": 0,
+  "text": "I can breathe; even awkward moments have room for kindness.",
+  "ms": 4423
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "gallery",
+  "take": 1,
+  "text": "I breathe, smile, and remember: even pigeons need lunch.",
+  "ms": 3702
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "credit",
+  "take": 0,
+  "text": "I\u2019m not his unpaid ghostwriter. I\u2019m claiming my credit.",
+  "ms": 3812
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "credit",
+  "take": 1,
+  "text": "I'm emailing him. My work isn't his personal trophy.",
+  "ms": 2849
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "dinner",
+  "take": 0,
+  "text": "Am I truly indifferent, or just avoiding choosing?",
+  "ms": 3226
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "dinner",
+  "take": 1,
+  "text": "What do I actually want, and have I said it?",
+  "ms": 3704
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "house",
+  "take": 0,
+  "text": "I can let myself miss the home that held me.",
+  "ms": 4461
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "house",
+  "take": 1,
+  "text": "I can miss it; it held more than just rooms.",
+  "ms": 3797
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "fragments",
+  "take": 0,
+  "text": "I\u2019m buffering, not boring. Let me land the damn point.",
+  "ms": 3035
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "fragments",
+  "take": 1,
+  "text": "I\u2019m not confused; I\u2019m building suspense. Nailed it.",
+  "ms": 2969
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "listening",
+  "take": 0,
+  "text": "Can I put my phone down and really listen?",
+  "ms": 4924
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "listening",
+  "take": 1,
+  "text": "Can I put my phone down and really listen?",
+  "ms": 3660
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "My cat isn't my parole officer. I'm going to Lisbon.",
+  "ms": 3203
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "I\u2019m scared, not stuck. Lisbon, here I damn well come.",
+  "ms": 4301
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to breathe slowly and treat myself with kindness.",
+  "ms": 2980
+ },
+ {
+  "model": "GPT-6.1 Sol (medium) \u2014 current",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to breathe slowly and treat myself with kindness.",
+  "ms": 3721
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "I breathe, smiling at the pigeon\u2019s lucky little lunch.",
+  "ms": 2317
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "I\u2019d smile; somehow, the pigeon got the better half.",
+  "ms": 1439
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "credit",
+  "take": 0,
+  "text": "I\u2019m done smiling through it. I\u2019m emailing him\u2014credit where it\u2019s due.",
+  "ms": 1257
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "credit",
+  "take": 1,
+  "text": "I\u2019m done smiling. I\u2019ll tell him my work deserves credit.",
+  "ms": 1814
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "I notice I said I didn\u2019t care, then rejected Thai. What do I want?",
+  "ms": 933
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "I notice I\u2019m frustrated; what would help us choose together?",
+  "ms": 937
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "house",
+  "take": 0,
+  "text": "I can let it matter; a childhood home holds memories.",
+  "ms": 1963
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "house",
+  "take": 1,
+  "text": "I can care; it held pieces of my childhood.",
+  "ms": 3052
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "I was saying absolutely nothing, with remarkable confidence. Nailed it.",
+  "ms": 1061
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "I just heard myself buffering in public. Iconic, honestly.",
+  "ms": 1645
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "listening",
+  "take": 0,
+  "text": "I hear the longing beneath that joke; could I put my phone down?",
+  "ms": 1194
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "listening",
+  "take": 1,
+  "text": "I hear the loneliness beneath the joke; can I put my phone away?",
+  "ms": 1297
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "I\u2019m scared because it matters. Lisbon\u2019s calling\u2014let\u2019s figure out the cat.",
+  "ms": 1077
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "I\u2019m scared because it matters. Lisbon\u2019s calling\u2014let\u2019s figure out the cat.",
+  "ms": 1076
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to pause, breathe, and give myself the kindness I deserve.",
+  "ms": 1329
+ },
+ {
+  "model": "GPT-6 Luna (low)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to pause, breathe, and be gentle with myself.",
+  "ms": 1978
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "gallery",
+  "take": 0,
+  "text": "I\u2019m amused, slightly surreal, and definitely not feeding pigeons.",
+  "ms": 1108
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "gallery",
+  "take": 1,
+  "text": "I\u2019d say: \u201cHalf a sandwich and a pigeon\u2014oddly, that feels enough.\u201d",
+  "ms": 761
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "credit",
+  "take": 0,
+  "text": "I\u2019d speak up. My smile\u2019s not a permission slip.",
+  "ms": 622
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "credit",
+  "take": 1,
+  "text": "I\u2019m done smiling. I\u2019ll say it plainly, and stop shrinking.",
+  "ms": 687
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "dinner",
+  "take": 0,
+  "text": "I\u2019m noticing indecision; maybe I can choose and stay with it.",
+  "ms": 629
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "dinner",
+  "take": 1,
+  "text": "I keep saying I don\u2019t care, then quietly changing my mind.",
+  "ms": 738
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "house",
+  "take": 0,
+  "text": "It\u2019s never just a house; it held your whole growing up.",
+  "ms": 1269
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "house",
+  "take": 1,
+  "text": "I\u2019m feeling it too; it\u2019s more than just a house.",
+  "ms": 684
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "fragments",
+  "take": 0,
+  "text": "I sound like a malfunctioning toaster with social anxiety.",
+  "ms": 614
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Yeah, I was winging it. Confidently. Like a charming disaster.",
+  "ms": 650
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "listening",
+  "take": 0,
+  "text": "I\u2019m here, listening. What matters most to you right now?",
+  "ms": 689
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "listening",
+  "take": 1,
+  "text": "I\u2019m here with you. What do you need right now?",
+  "ms": 821
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "I\u2019m scared, but I\u2019m going. Lisbon can\u2019t have me whispering.",
+  "ms": 701
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "I\u2019m scared, but I\u2019m going. Lisbon can have me.",
+  "ms": 655
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to breathe, pause, and choose kindness over panic.",
+  "ms": 594
+ },
+ {
+  "model": "GPT-5.4 mini (none)",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to breathe, soften, and let feelings pass gently.",
+  "ms": 615
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "gallery",
+  "take": 0,
+  "text": "Pigeons deserve sandwiches too; unexpected kindness feels good inside.",
+  "ms": 1154
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "gallery",
+  "take": 1,
+  "text": "Random but entertaining; hope that pigeon enjoyed the sandwich.",
+  "ms": 659
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "credit",
+  "take": 0,
+  "text": "No more smiling\u2014I'm emailing him right now, confident sass engaged!",
+  "ms": 965
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "credit",
+  "take": 1,
+  "text": "Speak up. Claim credit. Stop being so freaking polite.",
+  "ms": 1148
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "dinner",
+  "take": 0,
+  "text": "Why am I indecisive today about food choices?",
+  "ms": 517
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "dinner",
+  "take": 1,
+  "text": "I need to express my preferences more clearly.",
+  "ms": 605
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "house",
+  "take": 0,
+  "text": "It's okay to feel sentimental about childhood places. Breathe.",
+  "ms": 690
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "house",
+  "take": 1,
+  "text": "It's more than a house; it's memories and feelings intertwined.",
+  "ms": 681
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "fragments",
+  "take": 0,
+  "text": "\"I understood nothing, but I'm sure it was enlightening.\"",
+  "ms": 780
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "fragments",
+  "take": 1,
+  "text": "Turns out, we majored in Gibberish 101. Fluent, baby!",
+  "ms": 831
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "listening",
+  "take": 0,
+  "text": "How does being present feel compared to distractions?",
+  "ms": 645
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "listening",
+  "take": 1,
+  "text": "I choose to be present and attentive, actively listening.",
+  "ms": 558
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "lisbon",
+  "take": 0,
+  "text": "Who needs logic? Adventure gets the heart racing. Let's go!",
+  "ms": 664
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "lisbon",
+  "take": 1,
+  "text": "I'm scared, but saying \"yes\" sounds like living, right?",
+  "ms": 575
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "silence",
+  "take": 0,
+  "text": "I need to breathe deeply and cherish simple, present moments.",
+  "ms": 817
+ },
+ {
+  "model": "GPT-4o \u2014 previous production",
+  "sample": "silence",
+  "take": 1,
+  "text": "I need to trust myself and embrace my own journey.",
+  "ms": 725
+ }
+]

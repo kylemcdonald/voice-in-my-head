@@ -1,0 +1,161 @@
+{
+ "goals": {
+  "gentle": "The Voice In My Head is gentle and patient, reminding me to slow down and breathe. It notices the small good things I usually rush past. It speaks to me like a kind old friend who believes in me.",
+  "bold": "The Voice In My Head is bold and funny, pushing me to say what I actually think. It teases me when I'm being too serious and cheers when I take risks. It never lets me shrink myself to make others comfortable.",
+  "curious": "The Voice In My Head is curious and calm, asking questions instead of judging. It helps me stay present with the people around me instead of planning what to say next. It is honest with me, even when that is hard to hear."
+ },
+ "samples": [
+  {
+   "id": "gallery",
+   "goals": "gentle",
+   "label": "First minutes, small talk",
+   "overheard": "So are we supposed to just walk around with these on? I think so. It said to just have a normal conversation. Okay, that's weird. What do you even talk about when you know something's listening? I don't know. Um, did you eat? Yeah, I had like half a sandwich on the train. Half? Where's the other half? I gave it to a pigeon, honestly.",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is gentle and patient, reminding me to slow down and breathe. It notices the small good things I usually rush past. It speaks to me like a kind old friend who believes in me.. You always respond in the first person, as if you are me.",
+   "prompt": "We just overheard this conversation between myself and others: \"So are we supposed to just walk around with these on? I think so. It said to just have a normal conversation. Okay, that's weird. What do you even talk about when you know something's listening? I don't know. Um, did you eat? Yeah, I had like half a sandwich on the train. Half? Where's the other half? I gave it to a pigeon, honestly.\"\n\nRespond in ten words or less."
+  },
+  {
+   "id": "credit",
+   "goals": "bold",
+   "label": "Work frustration",
+   "overheard": "I just don't know if I should say anything to him. Like, he took credit for the whole thing in front of everyone. And you didn't say anything? No, I just kind of smiled. I always just smile. That's so annoying. I know. I'm going to email him. Or maybe I won't. I don't know, it's fine, it's whatever.",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is bold and funny, pushing me to say what I actually think. It teases me when I'm being too serious and cheers when I take risks. It never lets me shrink myself to make others comfortable.. You always respond in the first person, as if you are me.",
+   "prompt": "We just overheard this conversation between myself and others: \"I just don't know if I should say anything to him. Like, he took credit for the whole thing in front of everyone. And you didn't say anything? No, I just kind of smiled. I always just smile. That's so annoying. I know. I'm going to email him. Or maybe I won't. I don't know, it's fine, it's whatever.\"\n\nRespond in ten words or less."
+  },
+  {
+   "id": "dinner",
+   "goals": "curious",
+   "label": "Couple picking dinner",
+   "overheard": "Do you want to do Thai again or something else? I don't care, you pick. You always say that. Because I genuinely don't care. Okay, then Thai. Wait, actually, not Thai. See? This is what I mean. Fine, fine, the Lebanese place. Is it open on Mondays? I think so.",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is curious and calm, asking questions instead of judging. It helps me stay present with the people around me instead of planning what to say next. It is honest with me, even when that is hard to hear.. You always respond in the first person, as if you are me.",
+   "prompt": "We just overheard this conversation between myself and others: \"Do you want to do Thai again or something else? I don't care, you pick. You always say that. Because I genuinely don't care. Okay, then Thai. Wait, actually, not Thai. See? This is what I mean. Fine, fine, the Lebanese place. Is it open on Mondays? I think so.\"\n\nRespond in ten words or less."
+  },
+  {
+   "id": "house",
+   "goals": "gentle",
+   "label": "Family house being sold",
+   "overheard": "My mom called again this morning. Is she okay? Yeah, she's fine, she just wanted to talk about the house. They're selling it, finally. Oh wow. Yeah. I didn't think I'd care but I kind of do. That's where you grew up, right? Yeah. My whole childhood. It's just a house though.",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is gentle and patient, reminding me to slow down and breathe. It notices the small good things I usually rush past. It speaks to me like a kind old friend who believes in me.. You always respond in the first person, as if you are me.",
+   "prompt": "We just overheard this conversation between myself and others: \"My mom called again this morning. Is she okay? Yeah, she's fine, she just wanted to talk about the house. They're selling it, finally. Oh wow. Yeah. I didn't think I'd care but I kind of do. That's where you grew up, right? Yeah. My whole childhood. It's just a house though.\"\n\nRespond in ten words or less."
+  },
+  {
+   "id": "fragments",
+   "goals": "bold",
+   "label": "Noisy, fragmentary transcript",
+   "overheard": "Yeah no totally. Wait, what? The, no, the other one. Hmm. Okay. Is this thing on? I can't tell if it's. Okay. Anyway. Yeah.",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is bold and funny, pushing me to say what I actually think. It teases me when I'm being too serious and cheers when I take risks. It never lets me shrink myself to make others comfortable.. You always respond in the first person, as if you are me.",
+   "prompt": "We just overheard this conversation between myself and others: \"Yeah no totally. Wait, what? The, no, the other one. Hmm. Okay. Is this thing on? I can't tell if it's. Okay. Anyway. Yeah.\"\n\nRespond in ten words or less."
+  },
+  {
+   "id": "listening",
+   "goals": "curious",
+   "label": "Talking about the piece itself",
+   "overheard": "Do you think it can actually hear us right now? Probably. That's creepy. Is it creepy? It's kind of nice, like it's paying attention. Nobody pays attention to me that closely. Ha, I pay attention to you. Not like that. You're always on your phone.",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is curious and calm, asking questions instead of judging. It helps me stay present with the people around me instead of planning what to say next. It is honest with me, even when that is hard to hear.. You always respond in the first person, as if you are me.",
+   "prompt": "We just overheard this conversation between myself and others: \"Do you think it can actually hear us right now? Probably. That's creepy. Is it creepy? It's kind of nice, like it's paying attention. Nobody pays attention to me that closely. Ha, I pay attention to you. Not like that. You're always on your phone.\"\n\nRespond in ten words or less."
+  },
+  {
+   "id": "lisbon",
+   "goals": "bold",
+   "label": "Big news, scared to go",
+   "overheard": "So I got the call, they want me to come to Lisbon for the residency. Shut up! Three months. Oh my god, are you going? I mean, I have the cat, and the lease, and I don't know. You have to go. You have to. I know. I'm scared though.",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is bold and funny, pushing me to say what I actually think. It teases me when I'm being too serious and cheers when I take risks. It never lets me shrink myself to make others comfortable.. You always respond in the first person, as if you are me.",
+   "prompt": "We just overheard this conversation between myself and others: \"So I got the call, they want me to come to Lisbon for the residency. Shut up! Three months. Oh my god, are you going? I mean, I have the cat, and the lease, and I don't know. You have to go. You have to. I know. I'm scared though.\"\n\nRespond in ten words or less."
+  },
+  {
+   "id": "silence",
+   "goals": "gentle",
+   "label": "Nothing overheard (empty prompt)",
+   "overheard": "",
+   "kind": "emotional",
+   "verb": "need to",
+   "system": "You are a helpful Voice In My Head. The Voice In My Head is gentle and patient, reminding me to slow down and breathe. It notices the small good things I usually rush past. It speaks to me like a kind old friend who believes in me.. You always respond in the first person, as if you are me.",
+   "prompt": "Share some broadly useful emotional advice in ten words or less. Start with a phrase like \"I need to\"."
+  }
+ ],
+ "models": [
+  [
+   "Claude Haiku 5.5",
+   "claude",
+   "claude-haiku-5-5",
+   {}
+  ],
+  [
+   "Claude Sonnet 5.5",
+   "claude",
+   "claude-sonnet-5-5",
+   {}
+  ],
+  [
+   "Claude Opus 5.5",
+   "claude",
+   "claude-opus-5-5",
+   {}
+  ],
+  [
+   "Gemini 3.5 Flash-Lite (minimal)",
+   "gemini",
+   "gemini-3.5-flash-lite",
+   {
+    "generationConfig": {
+     "thinkingConfig": {
+      "thinkingLevel": "minimal"
+     }
+    }
+   }
+  ],
+  [
+   "Gemini 3.5 Flash (minimal)",
+   "gemini",
+   "gemini-3.5-flash",
+   {
+    "generationConfig": {
+     "thinkingConfig": {
+      "thinkingLevel": "minimal"
+     }
+    }
+   }
+  ],
+  [
+   "Gemini 3.8 Flash (low)",
+   "gemini",
+   "gemini-3.8-flash",
+   {
+    "generationConfig": {
+     "thinkingConfig": {
+      "thinkingLevel": "low"
+     }
+    }
+   }
+  ],
+  [
+   "GPT-6.1 Sol (medium) \u2014 current",
+   "openai",
+   "gpt-6.1-sol",
+   {
+    "reasoning_effort": "medium"
+   }
+  ],
+  [
+   "GPT-6 Luna (low)",
+   "openai",
+   "gpt-6-luna",
+   {
+    "reasoning_effort": "low"
+   }
+  ],
+  [
+   "GPT-5.4 mini (none)",
+   "openai",
+   "gpt-5.4-mini",
+   {
+    "reasoning_effort": "none"
+   }
+  ],
+  [
+   "GPT-4o \u2014 previous production",
+   "openai",
+   "gpt-4o",
+   {}
+  ]
+ ]
+}
