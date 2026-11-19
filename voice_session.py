@@ -668,6 +668,11 @@ class VoiceSession:
 
     def set_voice(self, voice: str) -> None:
         """Set the default voice for TTS."""
+        if not voice:
+            # Voice cloning failed (e.g. the ElevenLabs monthly voice add limit was
+            # reached). Keep the current voice so the visitor still hears something.
+            logger.warning(f"No voice given, keeping voice: {self._default_voice}")
+            return
         self._default_voice = voice
         logger.info(f"Voice set to: {voice}")
 
