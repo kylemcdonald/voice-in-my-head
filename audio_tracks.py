@@ -226,7 +226,7 @@ async def decode_mp3_stream(
                 # A more robust implementation would track exact byte positions
                 mp3_buffer.clear()
 
-            except av.AVError as e:
+            except av.FFmpegError as e:
                 # Not enough data for complete frames, continue accumulating
                 logger.debug(f"Incomplete MP3 data, continuing: {e}")
 
@@ -239,7 +239,7 @@ async def decode_mp3_stream(
                 for r_frame in resampled:
                     yield r_frame.to_ndarray().tobytes()
             container.close()
-        except av.AVError as e:
+        except av.FFmpegError as e:
             logger.warning(f"Could not decode remaining MP3 data: {e}")
 
 
