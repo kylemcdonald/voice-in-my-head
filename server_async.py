@@ -15,6 +15,8 @@ import os
 import secrets
 import signal
 import sys
+import threading
+import time
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -34,6 +36,51 @@ sessions: Dict[str, "VoiceSession"] = {}
 
 # Pending session configs (created in spin_up_session, used in websocket_handler)
 pending_configs: Dict[str, Dict] = {}
+
+# Memory grows by a few MB per session even after the session is freed (native memory
+# from the audio/WebRTC libraries), and the droplet has no swap. When the process is
+# this big and nobody is using it, exit so systemd restarts it with a fresh heap.
+MEMORY_RESTART_MB = int(os.getenv("MEMORY_RESTART_MB", "700"))
+# Only restart after this long without any request, so nobody is mid-page-load.
+MEMORY_RESTART_IDLE_SECONDS = 180
+MEMORY_CHECK_SECONDS = 60
+last_request_time = time.monotonic()
+
+
+def rss_mb() -> float:
+    """Resident memory of this process in MB."""
+    with open("/proc/self/status") as f:
+        for line in f:
+            if line.startswith("VmRSS:"):
+                return int(line.split()[1]) / 1024
+    return 0.0
+
+
+@web.middleware
+async def track_activity(request: web.Request, handler):
+    global last_request_time
+    if request.path != "/health":
+        last_request_time = time.monotonic()
+    return await handler(request)
+
+
+async def memory_watchdog() -> None:
+    """Log memory every 5 minutes, and restart when it is too high and the server is idle."""
+    checks = 0
+    while True:
+        await asyncio.sleep(MEMORY_CHECK_SECONDS)
+        rss = rss_mb()
+        idle = time.monotonic() - last_request_time
+        if checks % 5 == 0:
+            logger.info(
+                f"Memory: rss={rss:.0f}MB sessions={len(sessions)} "
+                f"tasks={len(asyncio.all_tasks())} threads={threading.active_count()} idle={idle:.0f}s"
+            )
+        checks += 1
+        if rss > MEMORY_RESTART_MB and not sessions and idle > MEMORY_RESTART_IDLE_SECONDS:
+            logger.warning(f"Memory {rss:.0f}MB > {MEMORY_RESTART_MB}MB while idle; exiting so systemd restarts us")
+            os.kill(os.getpid(), signal.SIGTERM)
+            return
 
 
 async def index(request: web.Request) -> web.Response:
@@ -218,12 +265,22 @@ async def stop_clone_sweep(app: web.Application) -> None:
     app["clone_sweep"].cancel()
 
 
+async def start_memory_watchdog(app: web.Application) -> None:
+    app["memory_watchdog"] = asyncio.create_task(memory_watchdog())
+
+
+async def stop_memory_watchdog(app: web.Application) -> None:
+    app["memory_watchdog"].cancel()
+
+
 def create_app() -> web.Application:
     """Create and configure the aiohttp application."""
-    app = web.Application()
+    app = web.Application(middlewares=[track_activity])
     app.on_startup.append(preload_voice_session)
     app.on_startup.append(start_clone_sweep)
     app.on_cleanup.append(stop_clone_sweep)
+    app.on_startup.append(start_memory_watchdog)
+    app.on_cleanup.append(stop_memory_watchdog)
 
     # Add routes
     app.router.add_get("/", index)
